@@ -30,10 +30,34 @@ class Settings(BaseSettings):
     vnecom_timezone: str = "Asia/Ho_Chi_Minh"
     vnecom_sources: str = "synthetic"
 
-    # http politeness
+    # http behaviour — all yours to tune
     vnecom_http_user_agent: str = "vnecom-tracker/0.1"
-    vnecom_http_rps: float = 0.5
+    vnecom_http_rps: float = 0.5  # 0 = no client-side rate limit
     vnecom_http_timeout_s: float = 20.0
+    vnecom_respect_robots: bool = True  # public/web sources check robots.txt unless this is false
+    vnecom_public_max_pages: int = 5  # pages per keyword/category for search-style sources
+
+    # Shopee Affiliate Open API (market-wide offers) — https://affiliate.shopee.vn
+    shopee_affiliate_app_id: str | None = None
+    shopee_affiliate_secret: SecretStr | None = None
+    shopee_affiliate_host: str = "https://open-api.affiliate.shopee.vn/graphql"
+    shopee_affiliate_keywords: str = (
+        "điện thoại,laptop,tai nghe,nồi chiên không dầu,kem chống nắng,sữa rửa mặt,tã,sữa bột"
+    )
+
+    # AccessTrade VN publisher datafeeds (Shopee/Lazada/Tiki/… product feeds) — https://pub.accesstrade.vn
+    accesstrade_token: SecretStr | None = None
+    accesstrade_host: str = "https://api.accesstrade.vn/v1"
+    accesstrade_domains: str = "shopee.vn,lazada.vn,tiki.vn"
+    accesstrade_page_size: int = 200
+
+    # public web search sources
+    lazada_public_keywords: str = "điện thoại,laptop,tai nghe bluetooth,nồi chiên không dầu,kem chống nắng"
+    sendo_public_keywords: str = "áo thun,giày thể thao,nồi cơm điện,ốp lưng"
+
+    # first-party retailers via schema.org JSON-LD (see config/retailers.yaml)
+    retail_retailers: str = "thegioididong,dienmayxanh,bachhoaxanh,fptshop,cellphones,hasaki,fahasa"
+    retail_max_products: int = 300  # per retailer per run; stable sample so the same SKUs are tracked daily
 
     # tiki
     tiki_category_ids: str = "1789,1815,8322"

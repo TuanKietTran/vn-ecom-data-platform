@@ -12,6 +12,7 @@ day_campaign as (
 select
     l.listing_key,
     l.platform,
+    pf.platform_kind,
     l.source,
     l.source_tier,
     l.product_id,
@@ -43,4 +44,5 @@ select
     l.review_count
 from l
 left join cat using (platform, category_id)
+left join {{ ref('platforms') }} pf using (platform)
 left join day_campaign dc using (capture_date)

@@ -5,26 +5,45 @@ from __future__ import annotations
 from collections.abc import Callable
 from datetime import date
 
+from vnecom.ingest.accesstrade import AccessTradeConnector
 from vnecom.ingest.base import Connector, ConnectorNotConfigured
 from vnecom.ingest.bronze_writer import BronzeWriteResult, write_bronze
 from vnecom.ingest.feed import FeedConnector
 from vnecom.ingest.lazada import LazadaOpenConnector
+from vnecom.ingest.lazada_public import LazadaPublicConnector
+from vnecom.ingest.retail_jsonld import RetailJsonLdConnector
+from vnecom.ingest.sendo_public import SendoPublicConnector
 from vnecom.ingest.shopee import ShopeeOpenConnector
+from vnecom.ingest.shopee_affiliate import ShopeeAffiliateConnector
 from vnecom.ingest.synthetic import SyntheticConnector
 from vnecom.ingest.tiki import TikiPublicConnector
 from vnecom.ingest.tiktok import TikTokShopConnector
 from vnecom.models import Platform
 from vnecom.settings import Settings
 
-# (source, platform) pairs. "synthetic" fans out to every platform.
-SOURCES: dict[str, list[tuple[Platform, Callable[[Settings], Connector]]]] = {
+Factory = Callable[[Settings], Connector]
+
+# source name -> (platform, factory) pairs. Multi-platform sources list one placeholder platform;
+# their rows carry the real one and land in bronze under platform=_mixed.
+SOURCES: dict[str, list[tuple[Platform, Factory]]] = {
+    # zero-credential demo data for every platform
     "synthetic": [(p, (lambda s, p=p: SyntheticConnector(s, p))) for p in Platform],
-    "tiki_public": [(Platform.TIKI, TikiPublicConnector)],
+    # official seller APIs — your own shop, exact numbers
     "shopee_open": [(Platform.SHOPEE, ShopeeOpenConnector)],
     "lazada_open": [(Platform.LAZADA, LazadaOpenConnector)],
     "tiktok_open": [(Platform.TIKTOK, TikTokShopConnector)],
-    "feed": [(Platform.SHOPEE, FeedConnector)],  # rows carry their own platform
-    # "sendo_*": Sendo has no stable public API as of writing — use a licensed feed.
+    # affiliate APIs — market-wide, sanctioned
+    "shopee_affiliate": [(Platform.SHOPEE, ShopeeAffiliateConnector)],
+    "accesstrade": [(Platform.SHOPEE, AccessTradeConnector)],
+    # public web — market-wide, best-effort
+    "tiki_public": [(Platform.TIKI, TikiPublicConnector)],
+    "lazada_public": [(Platform.LAZADA, LazadaPublicConnector)],
+    "sendo_public": [(Platform.SENDO, SendoPublicConnector)],
+    "retail_jsonld": [
+        (Platform(r), (lambda s, r=r: RetailJsonLdConnector(s, r))) for r in RetailJsonLdConnector.config()
+    ],
+    # licensed vendor files
+    "feed": [(Platform.SHOPEE, FeedConnector)],
 }
 
 
@@ -38,6 +57,8 @@ def run_source(
     for platform, factory in SOURCES[source]:
         if platforms and platform.value not in platforms:
             continue
+        if source == "retail_jsonld" and platform.value not in settings.retail_retailers.split(","):
+            continue
         conn = factory(settings)
         try:
             conn.check_config()
@@ -45,7 +66,7 @@ def run_source(
             print(f"[skip] {source}/{platform.value}: {e}")
             continue
         try:
-            part = platform.value if source != "feed" else "_mixed"
+            part = "_mixed" if conn.multi_platform else platform.value
             results.append(
                 write_bronze(
                     settings,

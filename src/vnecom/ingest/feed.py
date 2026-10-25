@@ -27,6 +27,7 @@ class FeedConnector(Connector):
     name = "feed"
     platform = Platform.SHOPEE  # each row carries its own platform
     source_tier = "licensed"
+    multi_platform = True
 
     def check_config(self) -> None:
         if not self.settings.feed_vendor:

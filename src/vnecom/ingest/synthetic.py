@@ -126,6 +126,16 @@ PROMO_PREFIX = [
     "",
 ]
 PLATFORM_DEMAND = {"shopee": 1.0, "lazada": 0.45, "tiktok": 0.7, "tiki": 0.3, "sendo": 0.08}
+# first-party retailers carry the shared SKUs in the categories they actually sell
+RETAIL_CATEGORIES = {
+    "thegioididong": {"phone_tablet", "computer", "electronics"},
+    "dienmayxanh": {"home_appliance", "electronics", "home_living"},
+    "bachhoaxanh": {"grocery", "mom_baby", "home_living"},
+    "fptshop": {"phone_tablet", "computer", "electronics"},
+    "cellphones": {"phone_tablet", "computer", "electronics"},
+    "hasaki": {"beauty", "health"},
+    "fahasa": {"books"},
+}
 SHARED_SKU_FRACTION = 0.3
 
 
@@ -154,11 +164,23 @@ class SynthProduct:
     ship_from: str
 
 
-@lru_cache(maxsize=8)
-def _catalog(platform: str, n: int, seed: int) -> tuple[SynthProduct, ...]:
-    rng = _rng("catalog", platform, seed)
+def _sku_core(platform: str, i: int, seed: int, shared: bool) -> tuple[str, str, str, int]:
+    """(category, brand, title, base_price) — shared SKUs use a platform-independent rng so the
+    same product shows up on every marketplace and retailer that sells its category."""
+    prng = _rng("sku", i, seed) if shared else _rng("sku", platform, i, seed)
     cats = list(CATALOG)
-    weights = [CATALOG[c][3] for c in cats]
+    cat = prng.choices(cats, [CATALOG[c][3] for c in cats])[0]
+    brands, templates, median, _ = CATALOG[cat]
+    brand = prng.choice(brands)
+    title = prng.choice(templates).format(b=brand, m=prng.choice(MODELS), v=prng.choice(VARIANTS))
+    return cat, brand, title, int(round(median * math.exp(prng.gauss(0, 0.45)), -3))
+
+
+@lru_cache(maxsize=32)
+def _catalog(platform: str, n: int, seed: int) -> tuple[SynthProduct, ...]:
+    if platform in RETAIL_CATEGORIES:
+        return _retail_catalog(platform, n, seed)
+    rng = _rng("catalog", platform, seed)
     n_sellers = max(5, n // 12)
     sellers = [
         (
@@ -171,14 +193,7 @@ def _catalog(platform: str, n: int, seed: int) -> tuple[SynthProduct, ...]:
     ]
     out: list[SynthProduct] = []
     for i in range(n):
-        shared = i < int(n * SHARED_SKU_FRACTION)
-        # shared SKUs use a platform-independent rng so the same product shows up everywhere
-        prng = _rng("sku", i, seed) if shared else _rng("sku", platform, i, seed)
-        cat = prng.choices(cats, weights)[0]
-        brands, templates, median, _ = CATALOG[cat]
-        brand = prng.choice(brands)
-        title = prng.choice(templates).format(b=brand, m=prng.choice(MODELS), v=prng.choice(VARIANTS))
-        base = int(round(median * math.exp(prng.gauss(0, 0.45)), -3))
+        cat, brand, title, base = _sku_core(platform, i, seed, shared=i < int(n * SHARED_SKU_FRACTION))
         sid, sname, official = sellers[rng.randrange(n_sellers)]
         out.append(
             SynthProduct(
@@ -199,6 +214,38 @@ def _catalog(platform: str, n: int, seed: int) -> tuple[SynthProduct, ...]:
                 rating=round(min(5.0, max(3.2, rng.gauss(4.7, 0.25))), 1),
                 fake_discounter=rng.random() < 0.08,
                 ship_from=rng.choice(SHIP_FROM),
+            )
+        )
+    return tuple(out)
+
+
+def _retail_catalog(platform: str, n: int, seed: int) -> tuple[SynthProduct, ...]:
+    """Retailers: their own store is the seller, no sold counters, MSRP-ish prices, shallow sales."""
+    rng = _rng("catalog", platform, seed)
+    out: list[SynthProduct] = []
+    for i in range(int(n * SHARED_SKU_FRACTION)):
+        cat, brand, title, base = _sku_core(platform, i, seed, shared=True)
+        if cat not in RETAIL_CATEGORIES[platform]:
+            continue
+        out.append(
+            SynthProduct(
+                platform=platform,
+                product_id=f"{platform[:3]}-{zlib.crc32(f'{platform}{i}'.encode()):010d}",
+                seller_id=platform,
+                seller_name=platform,
+                official=True,
+                category=cat,
+                category_id=f"{platform}:{cat}",
+                brand=brand,
+                title=title,
+                base_price=int(round(max(base, 15_000) * rng.uniform(1.0, 1.08), -3)),
+                markup=rng.uniform(0.0, 0.15),
+                campaign_depth=rng.uniform(0.03, 0.15),
+                rate=0.0,
+                initial_sold=0,
+                rating=round(min(5.0, max(3.5, rng.gauss(4.6, 0.2))), 1),
+                fake_discounter=False,
+                ship_from="TP. Hồ Chí Minh",
             )
         )
     return tuple(out)
@@ -324,9 +371,9 @@ class SyntheticConnector(Connector):
             category_path=[p.category],
             price=self._render_price(p.platform, price),
             list_price=self._render_price(p.platform, list_price),
-            sold_count=self._render_sold(p.platform, sold),
+            sold_count=None if p.platform in RETAIL_CATEGORIES else self._render_sold(p.platform, sold),
             rating_avg=p.rating,
-            review_count=int(sold * 0.18),
+            review_count=int(sold * 0.18) if p.rate else 20 + zlib.crc32(p.product_id.encode()) % 200,
             in_stock=in_stock,
             ship_from=p.ship_from,
             url=f"https://example.invalid/{p.platform}/{p.product_id}",

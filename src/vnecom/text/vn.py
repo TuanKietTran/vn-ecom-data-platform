@@ -72,7 +72,8 @@ def parse_vnd(v: str | int | float | None) -> int | None:
         return None
 
 
-_SOLD_PREFIX = re.compile(r"^(đã bán|da ban|sold|đã bán được)\s*", flags=re.IGNORECASE)
+_SOLD_PREFIX = re.compile(r"^(đã bán được|đã bán|da ban|sold)\s*", flags=re.IGNORECASE)
+_SOLD_SUFFIX = re.compile(r"\s*(sold|đã bán|lượt bán)$", flags=re.IGNORECASE)
 
 
 def parse_sold(v: str | int | None) -> tuple[int | None, bool]:
@@ -86,7 +87,7 @@ def parse_sold(v: str | int | None) -> tuple[int | None, bool]:
         return None, False
     if isinstance(v, int):
         return (v if v >= 0 else None), False
-    s = _SOLD_PREFIX.sub("", nfc(str(v)).strip()).replace("+", "").strip().lower()
+    s = _SOLD_SUFFIX.sub("", _SOLD_PREFIX.sub("", nfc(str(v)).strip())).replace("+", "").strip().lower()
     s = s.replace(" ", "")
     if not s:
         return None, False

@@ -1,8 +1,9 @@
 # Per-platform metadata used by connectors, the synthetic generator and the category map.
 # `tier` here = how trustworthy/complete the source is, surfaced in silver as `source_tier`:
-#   official  – platform Open API, your own shop (complete, exact sold counts)
+#   official  – platform seller API, your own shop (complete, exact sold counts)
+#   affiliate – platform/network affiliate API (market-wide, sanctioned, offer-biased sample)
 #   licensed  – paid market-data feed (market-wide, vendor methodology)
-#   public    – public/undocumented web API (market-wide, best-effort, may break, check ToS)
+#   public    – public web endpoints / structured data (market-wide, best-effort, may break)
 #   synthetic – generated demo data
 
 platforms:
@@ -10,31 +11,49 @@ platforms:
     display_name: Shopee
     official_store_label: Shopee Mall
     sold_count_bucketed: true
+    kind: marketplace
     sources:
       shopee_open: { tier: official, docs: "https://open.shopee.com/documents" }
+      shopee_affiliate: { tier: affiliate, docs: "https://affiliate.shopee.vn/open_api" }
+      accesstrade: { tier: affiliate, docs: "https://developers.accesstrade.vn" }
   lazada:
     display_name: Lazada
     official_store_label: LazMall
     sold_count_bucketed: true
+    kind: marketplace
     sources:
       lazada_open: { tier: official, docs: "https://open.lazada.com/apps/doc/doc" }
+      lazada_public: { tier: public, docs: "catalog search JSON (ajax=true)" }
   tiki:
     display_name: Tiki
     official_store_label: Tiki Trading / Official Store
     sold_count_bucketed: false
+    kind: marketplace
     sources:
-      tiki_public: { tier: public, docs: "unofficial — read https://tiki.vn ToS + robots.txt first" }
+      tiki_public: { tier: public, docs: "web app listing JSON" }
   tiktok:
     display_name: TikTok Shop
     official_store_label: TikTok Mall
     sold_count_bucketed: true
+    kind: marketplace
     sources:
       tiktok_open: { tier: official, docs: "https://partner.tiktokshop.com/docv2" }
   sendo:
     display_name: Sendo
     official_store_label: SenMall
     sold_count_bucketed: false
-    sources: {}
+    kind: marketplace
+    sources:
+      sendo_public: { tier: public, docs: "searchlist-api JSON — verify" }
+
+  # first-party retailers (config/retailers.yaml) — price benchmarks, no sold counters
+  thegioididong: { display_name: Thế Giới Di Động, kind: retailer, sources: { retail_jsonld: { tier: public } } }
+  dienmayxanh:   { display_name: Điện Máy Xanh,    kind: retailer, sources: { retail_jsonld: { tier: public } } }
+  bachhoaxanh:   { display_name: Bách Hóa Xanh,    kind: retailer, sources: { retail_jsonld: { tier: public } } }
+  fptshop:       { display_name: FPT Shop,         kind: retailer, sources: { retail_jsonld: { tier: public } } }
+  cellphones:    { display_name: CellphoneS,       kind: retailer, sources: { retail_jsonld: { tier: public } } }
+  hasaki:        { display_name: Hasaki,           kind: retailer, sources: { retail_jsonld: { tier: public } } }
+  fahasa:        { display_name: Fahasa,           kind: retailer, sources: { retail_jsonld: { tier: public } } }
 
 # Unified top-level taxonomy (platform category ids -> these via transform/dbt/seeds/category_map.csv)
 categories:

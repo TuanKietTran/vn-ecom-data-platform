@@ -36,6 +36,8 @@ def test_parse_vnd(raw, expected):
         ("1.234", (1234, False)),
         (42, (42, False)),
         ("sold 3k", (3000, True)),
+        ("1.2K sold", (1200, True)),
+        ("5,6k lượt bán", (5600, True)),
         (None, (None, False)),
     ],
 )

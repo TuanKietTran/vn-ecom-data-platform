@@ -11,11 +11,53 @@ from pydantic import BaseModel, Field
 
 
 class Platform(StrEnum):
+    # marketplaces
     SHOPEE = "shopee"
     LAZADA = "lazada"
     TIKI = "tiki"
     TIKTOK = "tiktok"
     SENDO = "sendo"
+    # first-party retailers (own e-shops; no sold counters, but the price benchmark for marketplaces)
+    THEGIOIDIDONG = "thegioididong"
+    DIENMAYXANH = "dienmayxanh"
+    BACHHOAXANH = "bachhoaxanh"
+    FPTSHOP = "fptshop"
+    CELLPHONES = "cellphones"
+    HASAKI = "hasaki"
+    FAHASA = "fahasa"
+
+    @property
+    def is_marketplace(self) -> bool:
+        return self in MARKETPLACES
+
+
+MARKETPLACES = frozenset({Platform.SHOPEE, Platform.LAZADA, Platform.TIKI, Platform.TIKTOK, Platform.SENDO})
+
+# domain -> platform, for multi-platform sources (affiliate datafeeds, licensed feeds)
+DOMAIN_PLATFORM = {
+    "shopee.vn": Platform.SHOPEE,
+    "lazada.vn": Platform.LAZADA,
+    "tiki.vn": Platform.TIKI,
+    "tiktok.com": Platform.TIKTOK,
+    "sendo.vn": Platform.SENDO,
+    "thegioididong.com": Platform.THEGIOIDIDONG,
+    "dienmayxanh.com": Platform.DIENMAYXANH,
+    "bachhoaxanh.com": Platform.BACHHOAXANH,
+    "fptshop.com.vn": Platform.FPTSHOP,
+    "cellphones.com.vn": Platform.CELLPHONES,
+    "hasaki.vn": Platform.HASAKI,
+    "fahasa.com": Platform.FAHASA,
+}
+
+
+def platform_from_domain(domain_or_url: str | None) -> Platform | None:
+    if not domain_or_url:
+        return None
+    s = domain_or_url.lower()
+    for dom, p in DOMAIN_PLATFORM.items():
+        if dom in s:
+            return p
+    return None
 
 
 class ProductSnapshot(BaseModel):

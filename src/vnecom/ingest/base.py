@@ -25,6 +25,21 @@ class ConnectorNotConfigured(RuntimeError):
     """Raised when credentials are missing — orchestrators treat this as 'skip', not 'fail'."""
 
 
+class BlockedError(RuntimeError):
+    """The site answered with a captcha / bot wall. Connectors stop paging and keep what they have;
+    the template deliberately does not try to get around these."""
+
+
+BLOCK_MARKERS = ("captcha", "punish", "_____tmd_____", "FAIL_SYS_USER_VALIDATE", "verify you are human")
+
+
+def looks_blocked(r: httpx.Response) -> bool:
+    if r.status_code in (403, 418, 429) and "json" not in r.headers.get("content-type", ""):
+        return True
+    head = r.text[:4000] if r.content else ""
+    return any(m.lower() in head.lower() for m in BLOCK_MARKERS) or "/punish" in str(r.url)
+
+
 class RateLimiter:
     """Token-bucket-ish: at most `rps` requests per second across threads."""
 
@@ -53,8 +68,9 @@ class Connector(ABC):
 
     name: ClassVar[str]
     platform: ClassVar[Platform]
-    source_tier: ClassVar[str]  # official | licensed | public | synthetic
-    respect_robots: ClassVar[bool] = False
+    source_tier: ClassVar[str]  # official | affiliate | licensed | public | synthetic
+    respect_robots: ClassVar[bool] = False  # web sources set True; VNECOM_RESPECT_ROBOTS=false overrides
+    multi_platform: ClassVar[bool] = False  # rows carry their own platform (feeds) -> bronze platform=_mixed
 
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
@@ -85,7 +101,7 @@ class Connector(ABC):
         return self._client
 
     def _allowed(self, url: str) -> bool:
-        if not self.respect_robots:
+        if not (self.respect_robots and self.settings.vnecom_respect_robots):
             return True
         host = urlparse(url)
         root = f"{host.scheme}://{host.netloc}"
@@ -111,8 +127,29 @@ class Connector(ABC):
             raise PermissionError(f"robots.txt disallows {url}")
         self._limiter.wait()
         r = self.client.get(url, **kwargs)
+        if looks_blocked(r):
+            raise BlockedError(f"bot wall at {url}")
         r.raise_for_status()
         return r.json()
+
+    @retry(
+        retry=retry_if_exception(_retryable),
+        wait=wait_exponential_jitter(multiplier=2, max=60),
+        stop=stop_after_attempt(4),
+        reraise=True,
+    )
+    def get_text(self, url: str, **kwargs: Any) -> str:
+        """HTML/XML fetch with robots + rate limit; raises BlockedError on bot walls."""
+        if not self._allowed(url):
+            raise PermissionError(f"robots.txt disallows {url}")
+        self._limiter.wait()
+        r = self.client.get(
+            url, headers={"Accept": "text/html,application/xhtml+xml,application/xml"}, **kwargs
+        )
+        if looks_blocked(r):
+            raise BlockedError(f"bot wall at {url}")
+        r.raise_for_status()
+        return r.text
 
     @retry(
         retry=retry_if_exception(_retryable),

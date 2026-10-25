@@ -1,6 +1,7 @@
 # vn-ecom-data-platform
 
-Template data platform for tracking Vietnamese e-commerce — **Shopee, Lazada, Tiki, TikTok Shop, Sendo** —
+Template data platform for tracking Vietnamese e-commerce — marketplaces **Shopee, Lazada, Tiki, TikTok Shop,
+Sendo** and retailers **Thế Giới Di Động, Điện Máy Xanh, Bách Hóa Xanh, FPT Shop, CellphoneS, Hasaki, Fahasa** —
 prices, discounts, sold counts, sellers and campaigns (1.1 → 12.12, payday, Tết, Black Friday).
 
 Medallion lake on **PySpark + Delta**, gold marts in **dbt (DuckDB)**, orchestrated by **Dagster _or_ Airflow 3**,
@@ -10,13 +11,15 @@ with zero credentials, so it works the moment you clone it.
 ```mermaid
 flowchart LR
   subgraph Sources
-    S1[Shopee / Lazada / TikTok<br/>Open APIs · own shop]
-    S2[Licensed feed<br/>market-wide]
-    S3[Tiki public catalog]
+    S1[Seller APIs<br/>Shopee · Lazada · TikTok]
+    S6[Affiliate APIs<br/>Shopee Affiliate · AccessTrade]
+    S3[Public web<br/>Tiki · Lazada · Sendo]
+    S7[Retailer JSON-LD<br/>TGDĐ · ĐMX · BHX · FPT · CellphoneS · Hasaki · Fahasa]
+    S2[Licensed feed]
     S4[Synthetic generator]
     S5[Price events<br/>Redpanda]
   end
-  S1 & S2 & S3 & S4 --> B[(Bronze<br/>gzip JSONL<br/>append-only)]
+  S1 & S6 & S3 & S7 & S2 & S4 --> B[(Bronze<br/>gzip JSONL<br/>append-only)]
   S5 -->|Structured Streaming| B
   B -->|PySpark| SV[(Silver · Delta<br/>snapshots · daily<br/>dim_product SCD2<br/>dim_seller · DQ)]
   SV -->|dbt-duckdb| G[(Gold · Parquet<br/>marts)]
@@ -86,7 +89,7 @@ Pick **one** orchestrator per lake — both drive the same `vnecom` CLI, so swit
 | `mart_platform_daily` | listings, sellers, GMV, GMV share, official-store share, stockout rate |
 | `mart_category_share` | weekly category share within and across platforms |
 | `mart_seller_leaderboard` | rolling-30-day seller ranking + count of fake-discount listings |
-| `mart_cross_platform_price` | same product on 2+ platforms today: cheapest platform and premium vs best |
+| `mart_cross_platform_price` | same product on 2+ platforms today: cheapest platform, premium vs best, marketplace vs retailer (TGDĐ/FPT/Hasaki…) gap |
 
 **About sold counts.** Shopee/Lazada/TikTok show bucketed counters (`Đã bán 1,2k`, `10k+`) that only move at
 thresholds. Silver flags them (`sold_count_is_bucketed`); gold spreads each bucket jump over the days since the
@@ -94,23 +97,38 @@ last move, which *dampens* spikes. That's why uplift ships twice: `gmv_uplift_x`
 `gmv_uplift_x_exact` (Tiki/Sendo/sub-1k/own-shop exact counters). On the synthetic data, 10.10 shows ~1.0× on
 bucketed platforms vs ~4.3× exact — the planted truth is ~5×.
 
-## Sources — read before going live
+## Sources
 
-| Source | Tier | Coverage | Status |
-|---|---|---|---|
-| `synthetic` | synthetic | all 5 platforms | default, deterministic |
-| `shopee_open` / `lazada_open` / `tiktok_open` | official | **your own shop only** | signing + pagination implemented; verify endpoints/fields against your app's API version |
-| `feed` | licensed | market-wide | maps vendor CSV/JSONL via `config/feed_mapping.yaml` |
-| `tiki_public` | public | market-wide | undocumented web API; honours robots.txt, rate-limited (0.5 req/s) |
+Enable any mix with `VNECOM_SOURCES` (comma-separated). Every row keeps `source` and `source_tier`, so gold
+can filter or weight by provenance.
 
-The official APIs don't expose competitors, and Shopee/Lazada ToS prohibit scraping — for market-wide
-tracking of those platforms, buy a licensed feed and drop it into `lake/landing/feed/<vendor>/dt=YYYY-MM-DD/`.
-Add a connector: subclass `Connector`, register it in `src/vnecom/ingest/registry.py`.
+| Source | Tier | Platforms | Coverage | Needs |
+|---|---|---|---|---|
+| `synthetic` | synthetic | all 12 | demo, deterministic | nothing |
+| `shopee_open` · `lazada_open` · `tiktok_open` | official | Shopee · Lazada · TikTok | your own shop, exact sold counts | seller API keys |
+| `shopee_affiliate` | affiliate | Shopee | **market-wide** offers: price, discount, sales, rating, Mall flag | Shopee Affiliate AppId/Secret |
+| `accesstrade` | affiliate | Shopee · Lazada · Tiki · retailers | **market-wide** merchant datafeeds | AccessTrade publisher token |
+| `tiki_public` | public | Tiki | market-wide by category | — |
+| `lazada_public` | public | Lazada | market-wide by keyword (catalog JSON) | — |
+| `sendo_public` | public | Sendo | market-wide by keyword | — |
+| `retail_jsonld` | public | TGDĐ · ĐMX · BHX · FPT Shop · CellphoneS · Hasaki · Fahasa | catalog via sitemaps + schema.org JSON-LD | — |
+| `feed` | licensed | any | whatever your vendor ships | vendor files in `landing/feed/` |
+
+**Knobs are yours:** `VNECOM_HTTP_RPS` (0 = unthrottled), `VNECOM_RESPECT_ROBOTS=false`,
+`VNECOM_PUBLIC_MAX_PAGES`, keyword lists per source, `RETAIL_MAX_PRODUCTS`. Defaults are polite.
+
+What the connectors **don't** do: solve captchas, rotate proxies, or forge Shopee's anti-bot request
+signatures. When a site serves a bot wall the connector stops paging and commits what it already has
+(`BlockedError`). TikTok Shop has no public catalog endpoint — use `tiktok_open` or a feed.
+
+Public endpoints are undocumented and change; payload mapping reads several known field aliases and each
+connector has a mocked-HTTP test pinning the shape it expects. Add a source: subclass `Connector`, register it
+in `src/vnecom/ingest/registry.py`, add it to `config/platforms.yaml`.
 
 ## Layout
 
 ```
-config/            platforms, campaign calendar, feed column mapping
+config/            platforms, retailers (JSON-LD discovery), campaign calendar, feed column mapping
 src/vnecom/        CLI, settings, connectors, VN text parsing, PySpark silver, streaming
 transform/dbt/     staging -> intermediate -> marts (+ seeds: campaign calendar, categories)
 orchestration/     dagster/ (assets, checks, schedules) · airflow/dags/

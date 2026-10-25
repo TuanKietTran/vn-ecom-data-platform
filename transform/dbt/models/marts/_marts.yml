@@ -16,8 +16,8 @@ models:
         data_tests: [not_null]
       - name: platform
         data_tests:
-          - accepted_values:
-              arguments: { values: [shopee, lazada, tiki, tiktok, sendo] }
+          - relationships:
+              arguments: { to: ref('platforms'), field: platform }
       - name: price_close_vnd
         data_tests: [not_null]
       - name: category_code
@@ -54,4 +54,6 @@ models:
     description: Rolling-30-day seller ranking, with count of fake-discount listings.
 
   - name: mart_cross_platform_price
-    description: Same product on 2+ platforms on the latest day — cheapest platform and premium vs best.
+    description: >
+      Same product on 2+ platforms on the latest day — cheapest platform, premium vs best, and how the
+      cheapest marketplace listing compares with the first-party retailers (TGDĐ, FPT Shop, Hasaki …).
