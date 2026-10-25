@@ -1,0 +1,41 @@
+name: vnecom
+version: "0.1.0"
+config-version: 2
+profile: vnecom
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+vars:
+  # look-back windows (days) used by gold logic — tune per business question
+  reference_price_lookback_days: 30   # EU-Omnibus-style "lowest price in the prior 30 days"
+  uplift_baseline_days: 14
+  fake_discount_min_displayed_pct: 0.30
+  fake_discount_max_real_pct: 0.10
+  pre_campaign_hike_pct: 0.15
+
+models:
+  vnecom:
+    +persist_docs: { relation: true, columns: true }
+    staging:
+      +materialized: view
+      +schema: staging
+    intermediate:
+      +materialized: table
+      +schema: intermediate
+    marts:
+      # gold lands as Parquet under <lake>/gold/<model>.parquet so Trino/Superset/Spark/pandas
+      # can read it without going through DuckDB; DuckDB keeps a view over it.
+      +materialized: external
+      +format: parquet
+      +schema: gold
+
+seeds:
+  vnecom:
+    +schema: ref
+    campaign_calendar:
+      +column_types: { start_date: date, end_date: date, intensity: double }

@@ -1,0 +1,12 @@
+.venv
+.git
+lake
+warehouse
+*.duckdb
+transform/dbt/target
+transform/dbt/logs
+.dagster_home
+.pytest_cache
+.ruff_cache
+**/__pycache__
+.env

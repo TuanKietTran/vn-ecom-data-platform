@@ -1,0 +1,28 @@
+version: 2
+
+sources:
+  - name: silver
+    description: PySpark-built silver tables (Delta in containers, Parquet offline). See src/vnecom/spark/silver.py.
+    config:
+      external_location: >-
+        {%- if env_var('VNECOM_TABLE_FORMAT', 'delta') == 'parquet' -%}
+        read_parquet('{{ env_var('VNECOM_LAKE_URI', '../../lake') }}/silver/{name}/**/*.parquet', hive_partitioning = true, union_by_name = true)
+        {%- else -%}
+        delta_scan('{{ env_var('VNECOM_LAKE_URI', '../../lake') }}/silver/{name}')
+        {%- endif -%}
+    tables:
+      - name: product_snapshots
+        description: Cleaned, typed, deduped observations — one row per listing per capture hour per source.
+        config:
+          freshness:
+            warn_after: { count: 26, period: hour }
+            error_after: { count: 50, period: hour }
+          loaded_at_field: _silver_loaded_at
+      - name: product_daily
+        description: Close-of-day state per listing (last observation + intraday min/max price).
+      - name: dim_product
+        description: SCD2 product dimension (title/brand/category/seller/official flag).
+      - name: dim_seller
+        description: SCD1 seller dimension.
+      - name: _dq_results
+        description: Silver data-quality check results, one row per check per capture_date.

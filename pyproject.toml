@@ -1,0 +1,56 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "vnecom"
+version = "0.1.0"
+description = "Template data platform for tracking Vietnamese e-commerce (Shopee, Lazada, Tiki, TikTok Shop, Sendo) — medallion lake on PySpark + dbt, orchestrated by Dagster or Airflow."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = [
+  "pydantic>=2.7",
+  "pydantic-settings>=2.3",
+  "httpx>=0.27",
+  "tenacity>=8.3",
+  "pyyaml>=6.0",
+  "fsspec>=2024.6",
+  "pyarrow>=16",
+  "pandas>=2.2",
+  "duckdb>=1.1",
+  "typer>=0.12",
+]
+
+[project.optional-dependencies]
+spark = ["pyspark>=4.0,<4.1", "delta-spark>=4.0,<4.1"]
+dbt = ["dbt-core>=1.9", "dbt-duckdb>=1.9", "deltalake>=0.22"]
+dagster = ["dagster>=1.9", "dagster-webserver>=1.9", "dagster-dbt>=0.25", "dagster-postgres>=0.25"]
+s3 = ["s3fs>=2024.6"]
+stream = ["confluent-kafka>=2.5"]
+dev = ["pytest>=8", "ruff>=0.6", "faker>=26"]
+lite = ["vnecom[spark,dbt,dagster,dev]"]
+all = ["vnecom[spark,dbt,dagster,s3,stream,dev]"]
+
+[project.scripts]
+vnecom = "vnecom.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/vnecom"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+extend-exclude = ["transform/dbt/target", "transform/dbt/dbt_packages"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["spark: needs a local Spark (JVM)"]
+
+[tool.dagster]
+module_name = "vnecom_dagster.definitions"
+code_location_name = "vnecom"

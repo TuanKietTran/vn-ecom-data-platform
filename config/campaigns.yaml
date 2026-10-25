@@ -1,0 +1,23 @@
+# VN marketplace sale calendar. `vnecom calendar` regenerates transform/dbt/seeds/campaign_calendar.csv.
+recurring:
+  double_day:            # 1.1, 2.2 … 12.12
+    pre_days: 1          # platforms open "pre-sale" vouchers the day before
+    post_days: 1         # and run "lingering" deals the day after
+    intensity: 2.5
+    mega_months: [9, 10, 11, 12]   # 9.9 / 10.10 / 11.11 / 12.12 are the year's biggest
+    mega_intensity: 5.0
+  mid_month:             # "Sale giữa tháng" on the 15th
+    enabled: true
+    day: 15
+    intensity: 1.6
+  payday:                # "Sale lương về" / payday on the 25th
+    enabled: true
+    day: 25
+    intensity: 1.8
+
+# One-off / lunar-calendar events. Add your own; dates are inclusive.
+fixed:
+  - { id: tet_2025,  name: "Tết Ất Tỵ (pre-Tết shopping)",  kind: tet,          start_date: 2025-01-10, end_date: 2025-01-26, intensity: 2.2 }
+  - { id: tet_2026,  name: "Tết Bính Ngọ (pre-Tết shopping)", kind: tet,        start_date: 2026-01-29, end_date: 2026-02-14, intensity: 2.2 }
+  - { id: bf_2025,   name: "Black Friday 2025",              kind: black_friday, start_date: 2025-11-28, end_date: 2025-11-30, intensity: 2.0 }
+  - { id: bf_2026,   name: "Black Friday 2026",              kind: black_friday, start_date: 2026-11-27, end_date: 2026-11-29, intensity: 2.0 }

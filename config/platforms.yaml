@@ -1,0 +1,53 @@
+# Per-platform metadata used by connectors, the synthetic generator and the category map.
+# `tier` here = how trustworthy/complete the source is, surfaced in silver as `source_tier`:
+#   official  – platform Open API, your own shop (complete, exact sold counts)
+#   licensed  – paid market-data feed (market-wide, vendor methodology)
+#   public    – public/undocumented web API (market-wide, best-effort, may break, check ToS)
+#   synthetic – generated demo data
+
+platforms:
+  shopee:
+    display_name: Shopee
+    official_store_label: Shopee Mall
+    sold_count_bucketed: true
+    sources:
+      shopee_open: { tier: official, docs: "https://open.shopee.com/documents" }
+  lazada:
+    display_name: Lazada
+    official_store_label: LazMall
+    sold_count_bucketed: true
+    sources:
+      lazada_open: { tier: official, docs: "https://open.lazada.com/apps/doc/doc" }
+  tiki:
+    display_name: Tiki
+    official_store_label: Tiki Trading / Official Store
+    sold_count_bucketed: false
+    sources:
+      tiki_public: { tier: public, docs: "unofficial — read https://tiki.vn ToS + robots.txt first" }
+  tiktok:
+    display_name: TikTok Shop
+    official_store_label: TikTok Mall
+    sold_count_bucketed: true
+    sources:
+      tiktok_open: { tier: official, docs: "https://partner.tiktokshop.com/docv2" }
+  sendo:
+    display_name: Sendo
+    official_store_label: SenMall
+    sold_count_bucketed: false
+    sources: {}
+
+# Unified top-level taxonomy (platform category ids -> these via transform/dbt/seeds/category_map.csv)
+categories:
+  - { code: phone_tablet,   name_vi: "Điện thoại & Máy tính bảng" }
+  - { code: computer,       name_vi: "Máy tính & Laptop" }
+  - { code: electronics,    name_vi: "Thiết bị điện tử" }
+  - { code: home_appliance, name_vi: "Điện gia dụng" }
+  - { code: home_living,    name_vi: "Nhà cửa & Đời sống" }
+  - { code: beauty,         name_vi: "Sắc đẹp" }
+  - { code: health,         name_vi: "Sức khỏe" }
+  - { code: fashion_women,  name_vi: "Thời trang nữ" }
+  - { code: fashion_men,    name_vi: "Thời trang nam" }
+  - { code: mom_baby,       name_vi: "Mẹ & Bé" }
+  - { code: grocery,        name_vi: "Bách hóa Online" }
+  - { code: sports,         name_vi: "Thể thao & Dã ngoại" }
+  - { code: books,          name_vi: "Nhà sách" }

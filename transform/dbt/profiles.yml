@@ -1,0 +1,24 @@
+vnecom:
+  target: "{{ env_var('DBT_TARGET', 'lite') }}"
+  outputs:
+    # lite tier: local lake folder + local DuckDB file
+    lite:
+      type: duckdb
+      path: "{{ env_var('VNECOM_WAREHOUSE', '../../warehouse/vnecom.duckdb') }}"
+      threads: 4
+      external_root: "{{ env_var('VNECOM_LAKE_URI', '../../lake') }}/gold"
+
+    # standard/full tiers: lake on MinIO (s3://vnecom-lake), DuckDB file on a volume
+    minio:
+      type: duckdb
+      path: "{{ env_var('VNECOM_WAREHOUSE', '/opt/vnecom/warehouse/vnecom.duckdb') }}"
+      threads: 4
+      extensions: [httpfs, delta]
+      settings:
+        s3_region: "{{ env_var('AWS_REGION', 'us-east-1') }}"
+        s3_endpoint: "{{ env_var('AWS_ENDPOINT_URL', 'http://minio:9000') | replace('http://', '') | replace('https://', '') }}"
+        s3_url_style: path
+        s3_use_ssl: "{{ 'true' if env_var('AWS_ENDPOINT_URL', '').startswith('https') else 'false' }}"
+        s3_access_key_id: "{{ env_var('AWS_ACCESS_KEY_ID', '') }}"
+        s3_secret_access_key: "{{ env_var('AWS_SECRET_ACCESS_KEY', '') }}"
+      external_root: "{{ env_var('VNECOM_LAKE_URI', 's3://vnecom-lake') }}/gold"

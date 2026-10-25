@@ -1,0 +1,5 @@
+# lite tier: local sqlite storage under $DAGSTER_HOME. standard/full mount docker/dagster/dagster.yaml (Postgres).
+telemetry:
+  enabled: false
+run_queue:
+  max_concurrent_runs: 2   # Spark local[*] + DuckDB writers don't love parallel runs on a laptop

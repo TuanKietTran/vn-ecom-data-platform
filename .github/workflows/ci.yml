@@ -1,0 +1,91 @@
+name: ci
+
+on:
+  push: { branches: [main] }
+  pull_request:
+  workflow_dispatch:
+
+concurrency: { group: "ci-${{ github.ref }}", cancel-in-progress: true }
+
+jobs:
+  lint-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install -e ".[lite]"
+      - run: ruff check . && ruff format --check .
+      - run: pytest -q -m "not spark"
+
+  e2e:
+    # bronze -> PySpark silver -> dbt gold on synthetic data, once per table format
+    needs: lint-unit
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: { table_format: [parquet, delta] }
+    env:
+      VNECOM_TEST_TABLE_FORMAT: ${{ matrix.table_format }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "17" }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - uses: actions/cache@v4
+        with:
+          path: ~/.ivy2.5.2
+          key: ivy-${{ hashFiles('pyproject.toml') }}
+      - run: pip install -e ".[lite]"
+      - run: pytest -q -m spark
+
+  orchestrators:
+    needs: lint-unit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - name: Dagster definitions load (dbt manifest compiled on the fly)
+        run: |
+          pip install -e ".[lite]"
+          cd orchestration/dagster
+          DAGSTER_HOME=$RUNNER_TEMP VNECOM_TABLE_FORMAT=parquet dagster definitions validate -w workspace.yaml
+      - name: Airflow DAGs import cleanly
+        run: |
+          python -m venv /tmp/af && /tmp/af/bin/pip install -q "apache-airflow==3.1.8" apache-airflow-providers-standard
+          /tmp/af/bin/pip install -q -e . --no-deps
+          AIRFLOW_HOME=$RUNNER_TEMP/af /tmp/af/bin/python -c "
+          from airflow.models.dagbag import DagBag
+          b = DagBag('orchestration/airflow/dags', include_examples=False)
+          assert not b.import_errors, b.import_errors
+          assert {'vnecom_capture','vnecom_campaign_capture','vnecom_gold','vnecom_backfill'} <= set(b.dags), b.dags
+          print(sorted(b.dags))"
+
+  images:
+    needs: lint-unit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cp .env.example .env
+      - name: compose config (every tier x orchestrator)
+        run: |
+          for p in core,dagster core,airflow core,dagster,full core,airflow,full; do
+            COMPOSE_PROFILES=$p docker compose --env-file .env -f docker/compose.yml config --quiet && echo "ok $p"
+          done
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/platform.Dockerfile
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/airflow.Dockerfile
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

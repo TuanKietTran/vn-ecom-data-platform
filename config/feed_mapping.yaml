@@ -1,0 +1,18 @@
+# ProductSnapshot field  <-  vendor column. One block per FEED_VENDOR value; `default` is the fallback.
+default:
+  platform: platform
+  product_id: product_id
+  sku_id: sku_id
+  seller_id: shop_id
+  seller_name: shop_name
+  is_official_store: is_mall
+  title: product_name
+  brand: brand
+  category_id: category_id
+  price: price
+  list_price: original_price
+  sold_count: sold
+  rating_avg: rating
+  review_count: review_count
+  url: url
+  captured_at: crawled_at

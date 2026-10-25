@@ -1,0 +1,27 @@
+select
+    platform,
+    source,
+    source_tier,
+    product_id,
+    sku_id,
+    -- listing grain key used across gold
+    platform || ':' || source || ':' || product_id || ':' || coalesce(sku_id, '') as listing_key,
+    seller_id,
+    is_official_store,
+    title,
+    title_norm,
+    brand,
+    category_id,
+    cast(capture_date as date)  as capture_date,
+    price_close_vnd,
+    price_min_vnd,
+    price_max_vnd,
+    list_price_vnd,
+    discount_pct_displayed,
+    sold_count,
+    sold_count_is_bucketed,
+    rating_avg,
+    review_count,
+    coalesce(had_stockout, false) as had_stockout,
+    n_observations
+from {{ source('silver', 'product_daily') }}

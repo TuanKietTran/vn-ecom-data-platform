@@ -1,0 +1,57 @@
+version: 2
+
+models:
+  - name: dim_campaign
+    description: VN marketplace sale calendar (double days, mid-month, payday, Tết, Black Friday).
+    columns:
+      - name: campaign_id
+        data_tests: [unique, not_null]
+
+  - name: fct_listing_daily
+    description: One row per listing per day — price, displayed discount, estimated units & GMV, campaign context.
+    columns:
+      - name: listing_key
+        data_tests: [not_null]
+      - name: capture_date
+        data_tests: [not_null]
+      - name: platform
+        data_tests:
+          - accepted_values:
+              arguments: { values: [shopee, lazada, tiki, tiktok, sendo] }
+      - name: price_close_vnd
+        data_tests: [not_null]
+      - name: category_code
+        data_tests:
+          - relationships:
+              arguments: { to: ref('categories'), field: category_code }
+    data_tests:
+      - dbt_utils_free_unique_combo:
+          arguments: { columns: [listing_key, capture_date] }
+
+  - name: fct_fake_discounts
+    description: >
+      "Nâng giá rồi giảm" detector — listing x campaign verdicts comparing the advertised discount
+      with the real discount vs the lowest price in the prior 30 days.
+    columns:
+      - name: confidence
+        data_tests:
+          - accepted_values:
+              arguments: { values: [high, medium, low] }
+
+  - name: mart_campaign_uplift
+    description: Campaign vs pre-campaign baseline GMV/units uplift per platform x category.
+
+  - name: mart_platform_daily
+    description: Daily platform KPIs and GMV share.
+    data_tests:
+      - dbt_utils_free_unique_combo:
+          arguments: { columns: [capture_date, platform] }
+
+  - name: mart_category_share
+    description: Weekly category GMV share within and across platforms.
+
+  - name: mart_seller_leaderboard
+    description: Rolling-30-day seller ranking, with count of fake-discount listings.
+
+  - name: mart_cross_platform_price
+    description: Same product on 2+ platforms on the latest day — cheapest platform and premium vs best.
