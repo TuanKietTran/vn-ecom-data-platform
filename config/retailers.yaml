@@ -29,5 +29,6 @@ retailers:
     default_category: beauty
   fahasa:
     base_url: https://www.fahasa.com
-    product_url: '^https://www\.fahasa\.com/[a-z0-9-]+\.html$'
+    # Fahasa groups products under department paths (e.g. /sach/...html), not only at /.
+    product_url: '^https://www\.fahasa\.com/(?:[a-z0-9-]+/)*[a-z0-9-]+\.html$'
     default_category: books

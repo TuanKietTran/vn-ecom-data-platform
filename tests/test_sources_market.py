@@ -302,6 +302,22 @@ def test_retail_jsonld_discovers_via_robots_and_maps(settings):
     )
 
 
+def test_retailer_product_url_patterns_cover_catalog_routes(settings):
+    examples = {
+        "thegioididong": "https://www.thegioididong.com/dtdd/samsung-galaxy-a55",
+        "dienmayxanh": "https://www.dienmayxanh.com/tivi/samsung-4k",
+        "bachhoaxanh": "https://www.bachhoaxanh.com/thit-heo/thit-heo-xay",
+        "fptshop": "https://fptshop.com.vn/dien-thoai/iphone-16",
+        "cellphones": "https://cellphones.com.vn/iphone-16-pro.html",
+        "hasaki": "https://hasaki.vn/san-pham/kem-chong-nang.html",
+        "fahasa": "https://www.fahasa.com/sach/van-hoc/truyen-ngan.html",
+    }
+    for retailer, url in examples.items():
+        conn = RetailJsonLdConnector(settings, retailer)
+        assert conn.product_re.fullmatch(url), retailer
+        assert not conn.product_re.fullmatch(url + "?utm_source=test"), retailer
+
+
 def test_retailer_filter_respected(settings):
     s = settings.model_copy(update={"retail_retailers": "hasaki", "synthetic_products_per_platform": 10})
     # unconfigured retailers are skipped before any network call
