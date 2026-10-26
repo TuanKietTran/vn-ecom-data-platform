@@ -112,7 +112,7 @@ can filter or weight by provenance.
 | `accesstrade` | affiliate | Shopee · Lazada · Tiki · retailers | **market-wide** merchant datafeeds | AccessTrade publisher token |
 | `tiki_public` | public | Tiki | market-wide by category | — |
 | `lazada_public` | public | Lazada | market-wide by keyword (catalog JSON) | — |
-| `sendo_public` | public | Sendo | market-wide by keyword | — |
+| `sendo_public` | public | Sendo | market-wide by keyword | —; **unverified: host does not resolve on 2026-10-26** |
 | `retail_jsonld` | public | TGDĐ · ĐMX · BHX · FPT Shop · CellphoneS · Hasaki · Fahasa | catalog via sitemaps + schema.org JSON-LD | — |
 | `feed` | licensed | any | whatever your vendor ships | vendor files in `landing/feed/` |
 
@@ -129,6 +129,10 @@ source; mocked tests need no credentials): `shopee_open` → `SHOPEE_PARTNER_ID`
 `LAZADA_ACCESS_TOKEN`; `tiktok_open` → `TIKTOK_APP_KEY`, `TIKTOK_APP_SECRET`, `TIKTOK_ACCESS_TOKEN`,
 `TIKTOK_SHOP_CIPHER`; `shopee_affiliate` → `SHOPEE_AFFILIATE_APP_ID`, `SHOPEE_AFFILIATE_SECRET`;
 `accesstrade` → `ACCESSTRADE_TOKEN`. See `.env.example` for all connector and public-source knobs.
+
+Sendo's configured search host currently returns DNS `NXDOMAIN` while `sendo.vn` resolves; see
+[`docs/sendo-public.md`](docs/sendo-public.md). A network error or bot wall stops Sendo paging without
+raising past already captured rows.
 
 Public endpoints are undocumented and change; payload mapping reads several known field aliases and each
 connector has a mocked-HTTP test pinning the shape it expects. Add a source: subclass `Connector`, register it

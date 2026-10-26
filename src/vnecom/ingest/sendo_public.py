@@ -10,6 +10,8 @@ from collections.abc import Iterator
 from datetime import date
 from typing import Any
 
+import httpx
+
 from vnecom.ingest.accesstrade import _first
 from vnecom.ingest.base import BlockedError, Connector, redact_personal_data
 from vnecom.models import Platform, ProductSnapshot
@@ -40,8 +42,8 @@ class SendoPublicConnector(Connector):
                         SEARCH_URL,
                         params={"q": kw, "page": page, "size": 60, "sortType": "default_listing_desc"},
                     )
-                except BlockedError as e:
-                    log.warning("%s: %s", self.name, e)
+                except (BlockedError, httpx.RequestError) as e:
+                    log.warning("%s: %s — stopping this run with %d listings", self.name, e, len(seen))
                     return
                 d = data.get("data")
                 items: list[dict[str, Any]] = (d if isinstance(d, list) else (d or {}).get("list")) or []

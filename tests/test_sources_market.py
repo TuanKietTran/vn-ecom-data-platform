@@ -5,9 +5,10 @@ import json
 from datetime import date
 
 import httpx
+import pytest
 
 from vnecom.ingest.accesstrade import AccessTradeConnector
-from vnecom.ingest.base import looks_blocked
+from vnecom.ingest.base import BlockedError, looks_blocked
 from vnecom.ingest.lazada_public import LazadaPublicConnector
 from vnecom.ingest.registry import SOURCES, run_source
 from vnecom.ingest.retail_jsonld import RetailJsonLdConnector, extract_products
@@ -217,6 +218,28 @@ def test_sendo_public_defensive_mapping(settings):
     assert r.url == "https://www.sendo.vn/ao-thun-77.html"
     assert r.raw["seller_phone"] == "[REDACTED]"
     assert r.raw["contact_email"] == "[REDACTED]"
+
+
+@pytest.mark.parametrize("failure", [BlockedError("bot wall"), httpx.ConnectError("DNS failure")])
+def test_sendo_stops_cleanly_after_failure_and_keeps_rows(settings, monkeypatch, failure):
+    s = settings.model_copy(update={"sendo_public_keywords": "áo thun", "vnecom_public_max_pages": 5})
+    conn = SendoPublicConnector(s)
+    responses = iter(
+        [
+            {"data": [{"id": 77, "name": "Áo thun nam", "final_price": 149000}]},
+            failure,
+        ]
+    )
+
+    def fake_get_json(*args, **kwargs):
+        response = next(responses)
+        if isinstance(response, Exception):
+            raise response
+        return response
+
+    monkeypatch.setattr(conn, "get_json", fake_get_json)
+    rows = list(conn.fetch(D, "r"))
+    assert [row.product_id for row in rows] == ["77"]
 
 
 # ── Retailers via JSON-LD ─────────────────────────────────────────────
