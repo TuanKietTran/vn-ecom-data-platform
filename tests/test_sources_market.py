@@ -304,18 +304,41 @@ def test_retail_jsonld_discovers_via_robots_and_maps(settings):
 
 def test_retailer_product_url_patterns_cover_catalog_routes(settings):
     examples = {
-        "thegioididong": "https://www.thegioididong.com/dtdd/samsung-galaxy-a55",
-        "dienmayxanh": "https://www.dienmayxanh.com/tivi/samsung-4k",
-        "bachhoaxanh": "https://www.bachhoaxanh.com/thit-heo/thit-heo-xay",
-        "fptshop": "https://fptshop.com.vn/dien-thoai/iphone-16",
-        "cellphones": "https://cellphones.com.vn/iphone-16-pro.html",
-        "hasaki": "https://hasaki.vn/san-pham/kem-chong-nang.html",
-        "fahasa": "https://www.fahasa.com/sach/van-hoc/truyen-ngan.html",
+        "thegioididong": [
+            "https://www.thegioididong.com/tai-nghe/tai-nghe-chup-tai-logitech-h540",
+            "https://www.thegioididong.com/bo-luu-dien/ups-example",
+            "https://www.thegioididong.com/man-hinh-may-tinh/samsung-odyssey-example",
+            "https://www.thegioididong.com/op-lung-flipcover/op-lung-example",
+        ],
+        "dienmayxanh": [
+            "https://www.dienmayxanh.com/may-loc-khong-khi/may-loc-khong-khi-dreame-tp20-45w",
+            "https://www.dienmayxanh.com/noi-chien-khong-dau/noi-chien-khong-dau-ket-hop-hap-lumias-24-lit-sf2400",
+            "https://www.dienmayxanh.com/robot-hut-bui/robot-hut-bui-lau-nha-roborock-qrevo-edge",
+            "https://www.dienmayxanh.com/ghe-gaming-ghe-cong-thai-hoc/ghe-gaming-example",
+        ],
+        "bachhoaxanh": [
+            "https://www.bachhoaxanh.com/ruou-ngon-cac-loai/ruou-soju-heejin-vi-dau-12-chai-360ml",
+        ],
+        "fptshop": [
+            "https://fptshop.com.vn/dien-thoai/samsung-galaxy-a18",
+            "https://fptshop.com.vn/dien-thoai/iphone-18-pro",
+            "https://fptshop.com.vn/dien-gia-dung/example",
+            "https://fptshop.com.vn/phan-mem/example",
+        ],
+        "cellphones": [
+            "https://cellphones.com.vn/amply-arirang-pa-203iii.html",
+            "https://cellphones.com.vn/amply-arirang-spa-2300.html",
+        ],
+        # Hasaki's and Fahasa's sitemap endpoints returned 404 during live inspection;
+        # these assert the existing known route formats without making network calls.
+        "hasaki": ["https://hasaki.vn/san-pham/kem-chong-nang.html"],
+        "fahasa": ["https://www.fahasa.com/sach/van-hoc/truyen-ngan.html"],
     }
-    for retailer, url in examples.items():
+    for retailer, urls in examples.items():
         conn = RetailJsonLdConnector(settings, retailer)
-        assert conn.product_re.fullmatch(url), retailer
-        assert not conn.product_re.fullmatch(url + "?utm_source=test"), retailer
+        for url in urls:
+            assert conn.product_re.fullmatch(url), (retailer, url)
+            assert not conn.product_re.fullmatch(url + "?utm_source=test"), (retailer, url)
 
 
 def test_retailer_filter_respected(settings):
