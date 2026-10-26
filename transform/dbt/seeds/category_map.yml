@@ -1,0 +1,21 @@
+version: 2
+
+seeds:
+  - name: category_map
+    description: Platform category IDs mapped to the unified category taxonomy.
+    columns:
+      - name: platform
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [tiki, shopee, lazada, sendo]
+      - name: category_id
+        data_tests: [not_null]
+      - name: category_code
+        data_tests:
+          - not_null
+    data_tests:
+      - dbt_utils_free_unique_combo:
+          arguments:
+            columns: [platform, category_id]
