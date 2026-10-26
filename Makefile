@@ -59,7 +59,7 @@ ps:
 	$(COMPOSE) ps
 
 trino-register:  ## full tier: register silver Delta tables + gold Parquet marts in Trino
-	$(COMPOSE) exec -T trino trino -f /opt/register_tables.sql
+	$(COMPOSE) exec -T trino trino --ignore-errors -f /opt/register_tables.sql
 	$(VN) trino-ddl | $(COMPOSE) exec -T trino trino
 
 # ── quality ─────────────────────────────────────────────────────────────
