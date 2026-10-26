@@ -341,6 +341,38 @@ def test_retailer_product_url_patterns_cover_catalog_routes(settings):
             assert not conn.product_re.fullmatch(url + "?utm_source=test"), (retailer, url)
 
 
+def test_retail_jsonld_skips_retailers_without_live_sitemaps(settings):
+    cases = {
+        "hasaki": [
+            "https://hasaki.vn/sitemap.xml",
+            "https://hasaki.vn/sitemap/image/sitemap-image.xml",
+            "https://hasaki.vn/sitemap-mobile.xml",
+        ],
+        # No Sitemap line: discovery falls back to the base /sitemap.xml URL.
+        "fahasa": ["https://www.fahasa.com/sitemap.xml"],
+    }
+    for retailer, unavailable_maps in cases.items():
+        base = RetailJsonLdConnector.config()[retailer]["base_url"]
+        sitemap_lines = (
+            "".join(f"Sitemap: {url}\n" for url in unavailable_maps) if retailer == "hasaki" else ""
+        )
+        requested = []
+
+        def handler(
+            req: httpx.Request, requested: list[str] = requested, sitemap_lines: str = sitemap_lines
+        ) -> httpx.Response:
+            requested.append(str(req.url))
+            if req.url.path == "/robots.txt":
+                return httpx.Response(200, text=f"User-agent: *\nAllow: /\n{sitemap_lines}")
+            return httpx.Response(404)
+
+        conn = _mock(RetailJsonLdConnector(settings, retailer), handler)
+        assert list(conn.fetch(D, "no-sitemap")) == []
+        assert all(f"{base}/robots.txt" == url or url in unavailable_maps for url in requested)
+        assert set(url for url in requested if url != f"{base}/robots.txt") == set(unavailable_maps)
+        conn.close()
+
+
 def test_retailer_filter_respected(settings):
     s = settings.model_copy(update={"retail_retailers": "hasaki", "synthetic_products_per_platform": 10})
     # unconfigured retailers are skipped before any network call

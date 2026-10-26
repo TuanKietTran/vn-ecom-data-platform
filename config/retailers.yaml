@@ -27,10 +27,14 @@ retailers:
     default_category: phone_tablet
   hasaki:
     base_url: https://hasaki.vn
+    # robots.txt sitemap.xml, sitemap-image.xml and sitemap-mobile.xml returned 404 (2026-10-26).
+    # Missing maps are skipped; capture emits no rows until a usable product sitemap is published.
     product_url: '^https://hasaki\.vn/san-pham/[a-z0-9-]+\.html$'
     default_category: beauty
   fahasa:
     base_url: https://www.fahasa.com
+    # robots.txt currently has no Sitemap line and /sitemap.xml returns 404 (2026-10-26).
+    # Homepage/category links are not crawled as product pages; missing maps yield no capture rows.
     # Fahasa groups products under department paths (e.g. /sach/...html), not only at /.
     product_url: '^https://www\.fahasa\.com/(?:[a-z0-9-]+/)*[a-z0-9-]+\.html$'
     default_category: books
