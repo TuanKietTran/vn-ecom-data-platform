@@ -201,7 +201,8 @@ services:
     profiles: [full]
 
   superset:
-    image: apache/superset:latest
+    image: vnecom/superset:local
+    build: { context: .., dockerfile: docker/superset.Dockerfile }
     entrypoint: ["/bin/bash", "/app/bootstrap.sh"]
     ports: ["8088:8088"]
     environment:

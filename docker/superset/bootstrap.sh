@@ -1,7 +1,6 @@
 #!/bin/bash
 set -e
-pip install --user --no-cache-dir --no-deps trino psycopg2-binary tzlocal >/dev/null
-export PYTHONPATH="/app/superset_home/.local/lib/python3.10/site-packages:${PYTHONPATH:-}"
+/app/.venv/bin/python -c "import trino, psycopg2, tzlocal"
 superset db upgrade
 superset fab create-admin --username admin --firstname Admin --lastname VNEcom \
   --email admin@example.com --password "${SUPERSET_ADMIN_PASSWORD}" || true
