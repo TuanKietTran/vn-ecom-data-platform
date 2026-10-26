@@ -10,6 +10,9 @@ macro-paths: ["macros"]
 target-path: "target"
 clean-targets: ["target", "dbt_packages"]
 
+on-run-start:
+  - "{{ configure_minio_s3_secret() }}"
+
 vars:
   # look-back windows (days) used by gold logic — tune per business question
   reference_price_lookback_days: 30   # EU-Omnibus-style "lowest price in the prior 30 days"

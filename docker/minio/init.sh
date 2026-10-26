@@ -1,6 +1,9 @@
 #!/bin/sh
 set -e
-mc alias set local http://minio:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"
+until mc alias set local http://minio:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" && mc ready local; do
+  echo "waiting for MinIO at http://minio:9000"
+  sleep 2
+done
 mc mb --ignore-existing local/vnecom-lake
 # landing/feed/<vendor>/ is where licensed data vendors drop files
 mc mb --ignore-existing local/vnecom-lake/landing/feed || true
