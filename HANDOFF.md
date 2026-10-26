@@ -50,4 +50,4 @@ Owner: Kyle Tran (GitHub `TuanKietTran`). State as of 2026-10-26: code complete 
 - [ ] Tune `config/retailers.yaml` URL regexes after the first sitemap crawl.
 - [ ] Fill `transform/dbt/seeds/category_map.csv` with real platform category ids.
 - [ ] Full tier: Trino/Superset/Redpanda, `make trino-register`, first dashboard.
-- [ ] Replace Airflow all-admins auth and every `change-me-please` secret before exposing anything.
+- [x] Disable Airflow all-admin access and require environment-provided secrets with `.env.example` placeholders before exposing anything.
