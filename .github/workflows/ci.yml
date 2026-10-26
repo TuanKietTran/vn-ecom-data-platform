@@ -50,8 +50,13 @@ jobs:
       - name: Dagster definitions load (dbt manifest compiled on the fly)
         run: |
           pip install -e ".[lite]"
+          mkdir -p "$RUNNER_TEMP/warehouse" "$RUNNER_TEMP/lake"
+          export VNECOM_TABLE_FORMAT=parquet
+          export VNECOM_WAREHOUSE="$RUNNER_TEMP/warehouse/vnecom.duckdb"
+          export VNECOM_LAKE_URI="$RUNNER_TEMP/lake"
+          dbt compile --project-dir transform/dbt --profiles-dir transform/dbt --target lite
           cd orchestration/dagster
-          DAGSTER_HOME=$RUNNER_TEMP VNECOM_TABLE_FORMAT=parquet dagster definitions validate -w workspace.yaml
+          DAGSTER_HOME=$RUNNER_TEMP dagster definitions validate -w workspace.yaml
       - name: Airflow DAGs import cleanly
         run: |
           python -m venv /tmp/af && /tmp/af/bin/pip install -q "apache-airflow==3.1.8" apache-airflow-providers-standard
