@@ -202,7 +202,14 @@ def query(sql: str) -> None:
     from vnecom.gold import dbt_env
 
     con = duckdb.connect(dbt_env(get_settings())["VNECOM_WAREHOUSE"], read_only=True)
-    typer.echo(con.sql(sql).df().to_string(index=False))
+    result = con.execute(sql)
+    columns = [column[0] for column in result.description]
+    rows = result.fetchall()
+    values = [["NULL" if value is None else str(value) for value in row] for row in rows]
+    widths = [max(len(column), *(len(row[i]) for row in values)) for i, column in enumerate(columns)]
+    lines = ["  ".join(column.ljust(widths[i]) for i, column in enumerate(columns))]
+    lines.extend("  ".join(value.ljust(widths[i]) for i, value in enumerate(row)) for row in values)
+    typer.echo("\n".join(lines))
 
 
 if __name__ == "__main__":
