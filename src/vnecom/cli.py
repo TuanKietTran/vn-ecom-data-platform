@@ -178,9 +178,11 @@ def trino_ddl(bucket_prefix: str = "s3://vnecom-lake") -> None:
     import duckdb
 
     from vnecom.gold import DBT_DIR as dbt_dir
+    from vnecom.gold import configure_duckdb_s3_secret
 
     s = get_settings()
     con = duckdb.connect()
+    configure_duckdb_s3_secret(con, s)
     for model in sorted((dbt_dir / "models" / "marts").glob("*.sql")):
         local = s.lake_path("gold", model.stem)
         cols = con.sql(f"describe select * from read_parquet('{local}/*.parquet')").fetchall()
