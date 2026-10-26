@@ -5,9 +5,10 @@ import json
 from datetime import date
 
 import httpx
+import pytest
 
 from vnecom.ingest.accesstrade import AccessTradeConnector
-from vnecom.ingest.base import looks_blocked
+from vnecom.ingest.base import BlockedError, looks_blocked
 from vnecom.ingest.lazada_public import LazadaPublicConnector
 from vnecom.ingest.registry import SOURCES, run_source
 from vnecom.ingest.retail_jsonld import RetailJsonLdConnector, extract_products
@@ -199,6 +200,8 @@ def test_sendo_public_defensive_mapping(settings):
                         "cate_id": 9,
                         "url_key": "ao-thun-77.html",
                         "shop_info": {"shop_id": 3, "shop_name": "Coolmate"},
+                        "seller_phone": "0900000000",
+                        "contact_email": "seller@example.test",
                     }
                 ]
             },
@@ -213,6 +216,30 @@ def test_sendo_public_defensive_mapping(settings):
         "Coolmate",
     )
     assert r.url == "https://www.sendo.vn/ao-thun-77.html"
+    assert r.raw["seller_phone"] == "[REDACTED]"
+    assert r.raw["contact_email"] == "[REDACTED]"
+
+
+@pytest.mark.parametrize("failure", [BlockedError("bot wall"), httpx.ConnectError("DNS failure")])
+def test_sendo_stops_cleanly_after_failure_and_keeps_rows(settings, monkeypatch, failure):
+    s = settings.model_copy(update={"sendo_public_keywords": "áo thun", "vnecom_public_max_pages": 5})
+    conn = SendoPublicConnector(s)
+    responses = iter(
+        [
+            {"data": [{"id": 77, "name": "Áo thun nam", "final_price": 149000}]},
+            failure,
+        ]
+    )
+
+    def fake_get_json(*args, **kwargs):
+        response = next(responses)
+        if isinstance(response, Exception):
+            raise response
+        return response
+
+    monkeypatch.setattr(conn, "get_json", fake_get_json)
+    rows = list(conn.fetch(D, "r"))
+    assert [row.product_id for row in rows] == ["77"]
 
 
 # ── Retailers via JSON-LD ─────────────────────────────────────────────
@@ -273,6 +300,77 @@ def test_retail_jsonld_discovers_via_robots_and_maps(settings):
         True,
         233,
     )
+
+
+def test_retailer_product_url_patterns_cover_catalog_routes(settings):
+    examples = {
+        "thegioididong": [
+            "https://www.thegioididong.com/tai-nghe/tai-nghe-chup-tai-logitech-h540",
+            "https://www.thegioididong.com/bo-luu-dien/ups-example",
+            "https://www.thegioididong.com/man-hinh-may-tinh/samsung-odyssey-example",
+            "https://www.thegioididong.com/op-lung-flipcover/op-lung-example",
+        ],
+        "dienmayxanh": [
+            "https://www.dienmayxanh.com/may-loc-khong-khi/may-loc-khong-khi-dreame-tp20-45w",
+            "https://www.dienmayxanh.com/noi-chien-khong-dau/noi-chien-khong-dau-ket-hop-hap-lumias-24-lit-sf2400",
+            "https://www.dienmayxanh.com/robot-hut-bui/robot-hut-bui-lau-nha-roborock-qrevo-edge",
+            "https://www.dienmayxanh.com/ghe-gaming-ghe-cong-thai-hoc/ghe-gaming-example",
+        ],
+        "bachhoaxanh": [
+            "https://www.bachhoaxanh.com/ruou-ngon-cac-loai/ruou-soju-heejin-vi-dau-12-chai-360ml",
+        ],
+        "fptshop": [
+            "https://fptshop.com.vn/dien-thoai/samsung-galaxy-a18",
+            "https://fptshop.com.vn/dien-thoai/iphone-18-pro",
+            "https://fptshop.com.vn/dien-gia-dung/example",
+            "https://fptshop.com.vn/phan-mem/example",
+        ],
+        "cellphones": [
+            "https://cellphones.com.vn/amply-arirang-pa-203iii.html",
+            "https://cellphones.com.vn/amply-arirang-spa-2300.html",
+        ],
+        # Hasaki's and Fahasa's sitemap endpoints returned 404 during live inspection;
+        # these assert the existing known route formats without making network calls.
+        "hasaki": ["https://hasaki.vn/san-pham/kem-chong-nang.html"],
+        "fahasa": ["https://www.fahasa.com/sach/van-hoc/truyen-ngan.html"],
+    }
+    for retailer, urls in examples.items():
+        conn = RetailJsonLdConnector(settings, retailer)
+        for url in urls:
+            assert conn.product_re.fullmatch(url), (retailer, url)
+            assert not conn.product_re.fullmatch(url + "?utm_source=test"), (retailer, url)
+
+
+def test_retail_jsonld_skips_retailers_without_live_sitemaps(settings):
+    cases = {
+        "hasaki": [
+            "https://hasaki.vn/sitemap.xml",
+            "https://hasaki.vn/sitemap/image/sitemap-image.xml",
+            "https://hasaki.vn/sitemap-mobile.xml",
+        ],
+        # No Sitemap line: discovery falls back to the base /sitemap.xml URL.
+        "fahasa": ["https://www.fahasa.com/sitemap.xml"],
+    }
+    for retailer, unavailable_maps in cases.items():
+        base = RetailJsonLdConnector.config()[retailer]["base_url"]
+        sitemap_lines = (
+            "".join(f"Sitemap: {url}\n" for url in unavailable_maps) if retailer == "hasaki" else ""
+        )
+        requested = []
+
+        def handler(
+            req: httpx.Request, requested: list[str] = requested, sitemap_lines: str = sitemap_lines
+        ) -> httpx.Response:
+            requested.append(str(req.url))
+            if req.url.path == "/robots.txt":
+                return httpx.Response(200, text=f"User-agent: *\nAllow: /\n{sitemap_lines}")
+            return httpx.Response(404)
+
+        conn = _mock(RetailJsonLdConnector(settings, retailer), handler)
+        assert list(conn.fetch(D, "no-sitemap")) == []
+        assert all(f"{base}/robots.txt" == url or url in unavailable_maps for url in requested)
+        assert set(url for url in requested if url != f"{base}/robots.txt") == set(unavailable_maps)
+        conn.close()
 
 
 def test_retailer_filter_respected(settings):

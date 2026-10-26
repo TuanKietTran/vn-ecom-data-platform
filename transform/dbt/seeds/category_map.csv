@@ -1,4 +1,6 @@
 platform,category_id,category_code,note
-tiki,tiki:1789,phone_tablet,Điện thoại - Máy tính bảng (verify id)
+tiki,tiki:1789,phone_tablet,Confirmed by public Tiki listings API returning phone products: https://tiki.vn/api/personalish/v1/blocks/listings?category=1789&page=1&limit=1
 tiki,tiki:1815,electronics,Thiết bị số - Phụ kiện số (verify id)
 tiki,tiki:8322,books,Nhà sách Tiki (verify id)
+lazada,lazada:4402,phone_tablet,Confirmed in public Lazada catalog result categories [4402 4518] for smartphone listings: https://www.lazada.vn/catalog/?q=smartphone&page=1&ajax=true
+lazada,lazada:4518,phone_tablet,Confirmed in public Lazada catalog result categories [4402 4518] for smartphone listings: https://www.lazada.vn/catalog/?q=smartphone&page=1&ajax=true

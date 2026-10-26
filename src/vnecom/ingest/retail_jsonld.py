@@ -16,6 +16,7 @@ from datetime import date
 from functools import cached_property
 from typing import Any
 
+import httpx
 import yaml
 
 from vnecom.ingest.base import BlockedError, Connector
@@ -128,7 +129,8 @@ class RetailJsonLdConnector(Connector):
             seen.add(sm)
             try:
                 root = ET.fromstring(self.get_text(sm).encode())
-            except (ET.ParseError, BlockedError, PermissionError) as e:
+            except (ET.ParseError, BlockedError, PermissionError, httpx.HTTPStatusError) as e:
+                # Retailers sometimes leave stale Sitemap entries in robots.txt; skip unavailable maps.
                 log.info("%s sitemap %s: %s", self.retailer, sm, e)
                 continue
             for loc in root.iter(f"{_SM_NS}loc"):

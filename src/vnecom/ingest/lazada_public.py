@@ -11,7 +11,7 @@ from collections.abc import Iterator
 from datetime import date
 from typing import Any
 
-from vnecom.ingest.base import BlockedError, Connector
+from vnecom.ingest.base import BlockedError, Connector, redact_personal_data
 from vnecom.models import Platform, ProductSnapshot
 
 log = logging.getLogger(__name__)
@@ -68,5 +68,5 @@ class LazadaPublicConnector(Connector):
             url=url,
             source=self.name,
             run_id=run_id,
-            raw=it | {"_keyword": keyword},
+            raw=redact_personal_data(it | {"_keyword": keyword}),
         )
