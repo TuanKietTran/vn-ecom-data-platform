@@ -23,6 +23,7 @@ Environment: macOS with OrbStack Docker Engine 29.8.2, Python 3.12.13 available,
 - `make trino-register` succeeded after the clean restart. Registration is now repeatable: existing Delta tables are detected, gold DDL is generated in the platform container using MinIO S3 credentials, and the eight gold marts are registered in Trino.
 - Trino queries returned 12 rows across 12 platforms for `hive.gold.mart_platform_daily`, and 1 row for `hive.gold.fct_fake_discounts` (the one-day sample has no distinct platform in that mart).
 - The Superset image installs `trino`, `psycopg2-binary`, and `tzlocal` into the actual Superset venv without replacing its SQLAlchemy dependency. After the clean rebuild, `/app/.venv/bin/python` imported all three drivers successfully.
+- An earlier `vnecom query` against MinIO gold files returned HTTP 403 because the read-only DuckDB connection lacked an S3 secret. It now configures the shared MinIO secret before executing SQL; `tests/test_cli.py` covers that ordering, and `tests/test_cli.py` plus the non-Spark test suite pass.
 - Superset REST API read-back after the clean restart confirmed published dashboard id 1, **VN E-commerce Platform Overview**, slug `vn-ecom-platform-overview`, with four charts. Its two datasets are `mart_platform_daily` and `fct_fake_discounts`; all four chart data endpoints had succeeded and their row counts were cross-checked against Trino before the recreate. The dashboard URL is `http://localhost:8088/superset/dashboard/vn-ecom-platform-overview/`.
 - Browser rendering was **not visually verified**. The Haiku dashboard worker reported `LAB-BLOCKED`: its Claude CLI session had no browser-control tool. It did not open the dashboard in a browser; the dashboard was built and verified through the local REST API instead. An unauthenticated URL request returned the expected login redirect (HTTP 302).
 
@@ -30,7 +31,8 @@ Environment: macOS with OrbStack Docker Engine 29.8.2, Python 3.12.13 available,
 
 All new commits use author and committer `TuanKietTran <35926768+TuanKietTran@users.noreply.github.com>`, with no trailers, and were not pushed.
 
-- `fix/superset-bootstrap` (includes the MinIO image/Delta S3 fixes from `fix/minio-image`, clean Superset venv dependencies, and repeatable Trino registration; preferred branch to merge for platform changes).
+- `fix/duckdb-query-minio` (includes the platform changes from `fix/superset-bootstrap` plus the read-only DuckDB MinIO query fix; preferred head to merge for the full platform work).
+- `fix/superset-bootstrap` (includes the MinIO image/Delta S3 fixes from `fix/minio-image`, clean Superset venv dependencies, and repeatable Trino registration; ancestor of `fix/duckdb-query-minio`).
 - `fix/minio-image` — `ed5d95abbed1f6bf48796ee15a28f340e82c1de8` (ancestor of `fix/superset-bootstrap`; do not merge separately if merging its successor).
 - `fix/demo-report-nan` — `f8fb58b9238f97199d85dffe24559bc268566100` (Fahasa NULL/NaN report fix and regression test).
 - `fix/full-tier-validation` — `f428e13d389e2ef6bf02dbe7730902485fbe1e25` (exploratory image-reference change reverted; not recommended for merge).
