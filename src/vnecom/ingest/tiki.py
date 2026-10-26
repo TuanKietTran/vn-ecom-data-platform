@@ -14,7 +14,7 @@ from collections.abc import Iterator
 from datetime import date
 from typing import Any
 
-from vnecom.ingest.base import Connector
+from vnecom.ingest.base import BlockedError, Connector, redact_personal_data
 from vnecom.models import Platform, ProductSnapshot
 
 log = logging.getLogger(__name__)
@@ -31,8 +31,12 @@ class TikiPublicConnector(Connector):
 
     def fetch(self, capture_date: date, run_id: str) -> Iterator[ProductSnapshot]:
         for cat in [c.strip() for c in self.settings.tiki_category_ids.split(",") if c.strip()]:
-            for page in range(1, MAX_PAGES + 1):
-                data = self.get_json(LISTING_URL, params={"category": cat, "page": page, "limit": 40})
+            for page in range(1, min(MAX_PAGES, self.settings.vnecom_public_max_pages) + 1):
+                try:
+                    data = self.get_json(LISTING_URL, params={"category": cat, "page": page, "limit": 40})
+                except BlockedError as e:
+                    log.warning("%s: %s — stopping this run", self.name, e)
+                    return
                 items: list[dict[str, Any]] = data.get("data") or []
                 if not items:
                     break
@@ -65,5 +69,5 @@ class TikiPublicConnector(Connector):
             url=f"https://tiki.vn/{it.get('url_path')}" if it.get("url_path") else None,
             source=self.name,
             run_id=run_id,
-            raw=it,
+            raw=redact_personal_data(it),
         )

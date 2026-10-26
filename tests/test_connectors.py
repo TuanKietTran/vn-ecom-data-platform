@@ -58,7 +58,7 @@ def test_tiki_maps_listing_payload(settings):
             return httpx.Response(200, text="User-agent: *\nAllow: /")
         return httpx.Response(200, json=payload)
 
-    s = settings.model_copy(update={"tiki_category_ids": "1789"})
+    s = settings.model_copy(update={"tiki_category_ids": "1789", "vnecom_public_max_pages": 1})
     conn = TikiPublicConnector(s)
     conn._client = httpx.Client(transport=httpx.MockTransport(handler))
     rows = list(conn.fetch(date(2026, 10, 1), "r"))
@@ -72,3 +72,23 @@ def test_tiki_maps_listing_payload(settings):
         "tiki:1789",
     )
     assert r.source == "tiki_public"
+
+
+def test_tiki_stops_on_bot_wall_and_respects_page_limit(settings):
+    calls = []
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        calls.append(req.url.path)
+        if req.url.path == "/robots.txt":
+            return httpx.Response(200, text="User-agent: *\nAllow: /\n")
+        page = req.url.params["page"]
+        if page == "2":
+            return httpx.Response(200, text="captcha", headers={"content-type": "text/html"})
+        return httpx.Response(200, json={"data": [{"id": 1, "name": "sample"}], "paging": {"last_page": 20}})
+
+    s = settings.model_copy(update={"tiki_category_ids": "1789", "vnecom_public_max_pages": 5})
+    conn = TikiPublicConnector(s)
+    conn._client = httpx.Client(transport=httpx.MockTransport(handler))
+    rows = list(conn.fetch(date(2026, 10, 1), "r"))
+    assert len(rows) == 1
+    assert calls.count("/api/personalish/v1/blocks/listings") == 2

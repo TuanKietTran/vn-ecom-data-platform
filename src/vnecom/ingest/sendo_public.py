@@ -11,7 +11,7 @@ from datetime import date
 from typing import Any
 
 from vnecom.ingest.accesstrade import _first
-from vnecom.ingest.base import BlockedError, Connector
+from vnecom.ingest.base import BlockedError, Connector, redact_personal_data
 from vnecom.models import Platform, ProductSnapshot
 
 log = logging.getLogger(__name__)
@@ -74,5 +74,5 @@ class SendoPublicConnector(Connector):
             url=f"https://www.sendo.vn/{url}" if url and not str(url).startswith("http") else url,
             source=self.name,
             run_id=run_id,
-            raw=it | {"_keyword": keyword},
+            raw=redact_personal_data(it | {"_keyword": keyword}),
         )

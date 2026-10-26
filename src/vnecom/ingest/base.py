@@ -31,6 +31,31 @@ class BlockedError(RuntimeError):
 
 
 BLOCK_MARKERS = ("captcha", "punish", "_____tmd_____", "FAIL_SYS_USER_VALIDATE", "verify you are human")
+_PRIVATE_KEY_MARKERS = (
+    "phone",
+    "mobile",
+    "email",
+    "address",
+    "contact",
+    "customer",
+    "buyer",
+    "recipient",
+    "real_name",
+)
+
+
+def redact_personal_data(value: Any) -> Any:
+    """Remove obvious personal/contact fields before retaining public payloads in bronze raw."""
+    if isinstance(value, dict):
+        return {
+            key: "[REDACTED]"
+            if any(marker in str(key).lower() for marker in _PRIVATE_KEY_MARKERS)
+            else redact_personal_data(item)
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [redact_personal_data(item) for item in value]
+    return value
 
 
 def looks_blocked(r: httpx.Response) -> bool:

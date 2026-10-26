@@ -123,6 +123,13 @@ What the connectors **don't** do: solve captchas, rotate proxies, or forge Shope
 signatures. When a site serves a bot wall the connector stops paging and commits what it already has
 (`BlockedError`). TikTok Shop has no public catalog endpoint — use `tiktok_open` or a feed.
 
+Credential connectors require these environment variables (set them only when using the corresponding
+source; mocked tests need no credentials): `shopee_open` → `SHOPEE_PARTNER_ID`, `SHOPEE_PARTNER_KEY`,
+`SHOPEE_SHOP_ID`, `SHOPEE_ACCESS_TOKEN`; `lazada_open` → `LAZADA_APP_KEY`, `LAZADA_APP_SECRET`,
+`LAZADA_ACCESS_TOKEN`; `tiktok_open` → `TIKTOK_APP_KEY`, `TIKTOK_APP_SECRET`, `TIKTOK_ACCESS_TOKEN`,
+`TIKTOK_SHOP_CIPHER`; `shopee_affiliate` → `SHOPEE_AFFILIATE_APP_ID`, `SHOPEE_AFFILIATE_SECRET`;
+`accesstrade` → `ACCESSTRADE_TOKEN`. See `.env.example` for all connector and public-source knobs.
+
 Public endpoints are undocumented and change; payload mapping reads several known field aliases and each
 connector has a mocked-HTTP test pinning the shape it expects. Add a source: subclass `Connector`, register it
 in `src/vnecom/ingest/registry.py`, add it to `config/platforms.yaml`.

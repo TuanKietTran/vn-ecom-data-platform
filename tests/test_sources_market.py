@@ -199,6 +199,8 @@ def test_sendo_public_defensive_mapping(settings):
                         "cate_id": 9,
                         "url_key": "ao-thun-77.html",
                         "shop_info": {"shop_id": 3, "shop_name": "Coolmate"},
+                        "seller_phone": "0900000000",
+                        "contact_email": "seller@example.test",
                     }
                 ]
             },
@@ -213,6 +215,8 @@ def test_sendo_public_defensive_mapping(settings):
         "Coolmate",
     )
     assert r.url == "https://www.sendo.vn/ao-thun-77.html"
+    assert r.raw["seller_phone"] == "[REDACTED]"
+    assert r.raw["contact_email"] == "[REDACTED]"
 
 
 # ── Retailers via JSON-LD ─────────────────────────────────────────────
