@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-/app/.venv/bin/python -m pip install --no-cache-dir "trino[sqlalchemy]" psycopg2-binary >/dev/null
+/usr/local/bin/uv pip install --python /app/.venv/bin/python --no-cache "trino[sqlalchemy]" psycopg2-binary >/dev/null
 superset db upgrade
 superset fab create-admin --username admin --firstname Admin --lastname VNEcom \
   --email admin@example.com --password "${SUPERSET_ADMIN_PASSWORD}" || true
