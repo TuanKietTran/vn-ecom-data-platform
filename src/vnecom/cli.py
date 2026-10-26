@@ -201,9 +201,11 @@ def query(sql: str) -> None:
     """Ad-hoc SQL against the gold warehouse (DuckDB)."""
     import duckdb
 
-    from vnecom.gold import dbt_env
+    from vnecom.gold import configure_duckdb_s3_secret, dbt_env
 
-    con = duckdb.connect(dbt_env(get_settings())["VNECOM_WAREHOUSE"], read_only=True)
+    settings = get_settings()
+    con = duckdb.connect(dbt_env(settings)["VNECOM_WAREHOUSE"], read_only=True)
+    configure_duckdb_s3_secret(con, settings)
     result = con.execute(sql)
     columns = [column[0] for column in result.description]
     rows = result.fetchall()
