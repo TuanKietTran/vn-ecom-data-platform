@@ -25,7 +25,7 @@ dependencies = [
 [project.optional-dependencies]
 spark = ["pyspark>=4.0,<4.1", "delta-spark>=4.0,<4.1"]
 dbt = ["dbt-core>=1.9", "dbt-duckdb>=1.9", "deltalake>=0.22"]
-dagster = ["dagster>=1.9", "dagster-webserver>=1.9", "dagster-dbt>=0.25", "dagster-postgres>=0.25"]
+dagster = ["dagster>=1.9", "dagster-webserver>=1.9", "dagster-dbt>=0.25", "dagster-postgres>=0.25", "psycopg[binary]>=3.1"]
 s3 = ["s3fs>=2024.6"]
 stream = ["confluent-kafka>=2.5"]
 dev = ["pytest>=8", "ruff>=0.6", "faker>=26"]

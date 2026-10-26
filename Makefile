@@ -60,7 +60,13 @@ ps:
 
 trino-register:  ## full tier: register silver Delta tables + gold Parquet marts in Trino
 	$(COMPOSE) exec -T trino trino -f /opt/register_tables.sql
-	$(VN) trino-ddl | $(COMPOSE) exec -T trino trino
+	@for table in product_snapshots product_daily dim_product dim_seller; do \
+	  exists=$$($(COMPOSE) exec -T trino trino --execute "SELECT count(*) FROM delta.information_schema.tables WHERE table_schema='silver' AND table_name='$$table'" | tr -d '"\r'); \
+	  if [ "$$exists" = "0" ]; then \
+	    $(COMPOSE) exec -T trino trino --execute "CALL delta.system.register_table(schema_name => 'silver', table_name => '$$table', table_location => 's3://vnecom-lake/silver/$$table')"; \
+	  else echo "delta.silver.$$table already registered"; fi; \
+	done
+	$(COMPOSE) run --rm --no-deps spark-master vnecom trino-ddl | $(COMPOSE) exec -T trino trino
 
 # ── quality ─────────────────────────────────────────────────────────────
 test:  ## full test suite (includes local Spark + dbt e2e)

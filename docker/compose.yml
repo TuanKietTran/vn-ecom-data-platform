@@ -82,27 +82,27 @@ x-airflow: &airflow
 services:
   # ── core (standard + full) ─────────────────────────────────────────────
   minio:
-    image: minio/minio:latest
+    image: cgr.dev/chainguard/minio:latest
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-vnecom}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env}
     ports: ["9000:9000", "9001:9001"]
     volumes: [minio:/data]
+    # Chainguard's minimal image intentionally omits curl; minio-init waits via `mc ready`.
     healthcheck:
-      test: ["CMD", "curl", "-fs", "http://localhost:9000/minio/health/live"]
-      interval: 10s
-      retries: 10
+      disable: true
     profiles: [core]
 
   minio-init:
-    image: minio/mc:latest
+    image: bitnamilegacy/minio-client:latest
     entrypoint: /bin/sh /init.sh
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-vnecom}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env}
+      MC_CONFIG_DIR: /tmp/.mc
     volumes: [./minio/init.sh:/init.sh:ro]
-    depends_on: { minio: { condition: service_healthy } }
+    depends_on: { minio: { condition: service_started } }
     profiles: [core]
 
   postgres:
@@ -201,7 +201,8 @@ services:
     profiles: [full]
 
   superset:
-    image: apache/superset:latest
+    image: vnecom/superset:local
+    build: { context: .., dockerfile: docker/superset.Dockerfile }
     entrypoint: ["/bin/bash", "/app/bootstrap.sh"]
     ports: ["8088:8088"]
     environment:
