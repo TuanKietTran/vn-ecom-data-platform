@@ -1,6 +1,43 @@
-"""Framework-independent generation value objects."""
+"""Framework-free ShopLens domain entities and generation value objects."""
 
 from dataclasses import dataclass, field
+from datetime import datetime
+
+from vnecom.ai.domain.value_objects import Language, Money, Platform
+
+
+@dataclass(frozen=True, slots=True)
+class Product:
+    product_id: str
+    title: str
+    brand: str | None = None
+    category: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class Listing:
+    listing_id: str
+    product_id: str
+    platform: Platform
+    price: Money
+    url: str | None = None
+    observed_at: datetime | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class Citation:
+    source_id: str
+    excerpt: str
+    source_type: str
+    url: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class Answer:
+    text: str
+    language: Language
+    citations: tuple[Citation, ...] = ()
+    sql: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

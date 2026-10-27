@@ -19,7 +19,7 @@ import typer
 from vnecom.settings import REPO_ROOT, get_settings
 
 app = typer.Typer(no_args_is_help=True, add_completion=False, help=__doc__)
-ai_app = typer.Typer(no_args_is_help=True, add_completion=False, help="AI capabilities (experimental stub).")
+ai_app = typer.Typer(no_args_is_help=True, add_completion=False, help="ShopLens AI capabilities.")
 app.add_typer(ai_app, name="ai")
 DBT_DIR = REPO_ROOT / "transform" / "dbt"
 logging.basicConfig(
@@ -27,10 +27,47 @@ logging.basicConfig(
 )
 
 
-@ai_app.command("status")
-def ai_status() -> None:
-    """Show the current availability of AI functionality."""
-    typer.echo("AI functionality is not configured; this command is a stub.")
+def _require_ai() -> None:
+    import importlib.util
+
+    if importlib.util.find_spec("fastapi") is None:
+        typer.echo("AI dependencies are missing; install with: pip install 'vnecom[ai]'", err=True)
+        raise typer.Exit(2)
+
+
+@ai_app.command("embed")
+def ai_embed() -> None:
+    """Embed the configured product corpus (P1 implementation)."""
+    typer.echo("AI embedding pipeline is not implemented yet.")
+
+
+@ai_app.command("serve")
+def ai_serve(host: str = "127.0.0.1", port: int = 8000) -> None:
+    """Start the ShopLens API (P1 implementation)."""
+    _require_ai()
+    import uvicorn
+
+    from vnecom.ai.interfaces.api import create_app
+
+    uvicorn.run(create_app(), host=host, port=port)
+
+
+@ai_app.command("grpc")
+def ai_grpc() -> None:
+    """Start the ShopLens gRPC service (P1 implementation)."""
+    typer.echo("AI gRPC service is not implemented yet.")
+
+
+@ai_app.command("eval")
+def ai_eval() -> None:
+    """Run the ShopLens evaluation suite (P1 implementation)."""
+    typer.echo("AI evaluation is not implemented yet.")
+
+
+@ai_app.command("match")
+def ai_match() -> None:
+    """Match products across platforms (P1 implementation)."""
+    typer.echo("AI product matching is not implemented yet.")
 
 
 def _dates(start: str | None, end: str | None) -> list[date]:
