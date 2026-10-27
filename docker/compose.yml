@@ -83,7 +83,7 @@ x-airflow: &airflow
 services:
   # ── core (standard + full) ─────────────────────────────────────────────
   minio:
-    image: minio/minio:latest
+    image: pgsty/minio:latest
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-vnecom}
@@ -97,7 +97,7 @@ services:
     profiles: [core]
 
   minio-init:
-    image: minio/mc:latest
+    image: pgsty/mc:latest
     entrypoint: /bin/sh /init.sh
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-vnecom}
