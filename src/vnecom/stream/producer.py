@@ -10,6 +10,7 @@ import json
 import random
 import time
 from datetime import UTC, datetime
+from itertools import islice
 
 from vnecom.ingest.synthetic import _catalog
 from vnecom.settings import get_settings
@@ -40,6 +41,13 @@ def events(n_products: int, seed: int):
         }
 
 
+def finite_events(n_products: int, seed: int, count: int):
+    """Yield exactly count deterministic-shape events for repeatable smoke checks."""
+    if count <= 0:
+        raise ValueError("count must be positive")
+    yield from islice(events(n_products, seed), count)
+
+
 def main() -> None:
     from confluent_kafka import Producer
 
@@ -47,14 +55,27 @@ def main() -> None:
     ap.add_argument("--bootstrap", default="localhost:19092")
     ap.add_argument("--rate", type=float, default=20.0, help="events per second")
     ap.add_argument("--products", type=int, default=50, help="listings per platform to tick")
+    ap.add_argument("--count", type=int, help="send a finite number of events, then flush")
     a = ap.parse_args()
+    if a.rate <= 0 or a.products <= 0 or (a.count is not None and a.count <= 0):
+        ap.error("rate, products, and count must be positive")
 
     prod = Producer({"bootstrap.servers": a.bootstrap, "linger.ms": 50})
-    for i, ev in enumerate(events(a.products, seed=7)):
+    total = a.count if a.count is not None else None
+    source = (
+        finite_events(a.products, seed=7, count=total) if total is not None else events(a.products, seed=7)
+    )
+    i = 0
+    while total is None or i < total:
+        ev = next(source)
         prod.produce(TOPIC, key=f"{ev['platform']}:{ev['product_id']}", value=json.dumps(ev))
-        if i % 100 == 0:
-            prod.poll(0)
-        time.sleep(1 / a.rate)
+        prod.poll(0)
+        i += 1
+        if total is None or i < total:
+            time.sleep(1 / a.rate)
+    remaining = prod.flush(30)
+    if remaining:
+        raise RuntimeError(f"{remaining} message(s) were not delivered before timeout")
 
 
 if __name__ == "__main__":

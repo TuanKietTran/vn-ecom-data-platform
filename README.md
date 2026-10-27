@@ -46,6 +46,12 @@ flowchart LR
 | **standard** | Docker: MinIO, Postgres, Spark master/worker, **Dagster** *or* **Airflow 3** | Docker, ~6 GB RAM |
 | **full** | standard + Trino, Superset, Redpanda, price producer, Spark streaming job | ~10 GB RAM |
 
+For a finite producer smoke run against an already-running full stack, use
+`python -m vnecom.stream.producer --bootstrap localhost:19092 --count 100 --rate 20`.
+The default producer remains continuous when `--count` is omitted. Finite publishing
+confirms delivery to Kafka; verify bronze ingestion separately in the Spark output at
+`bronze/price_events`. The end-to-end bronze count has not been verified on this stack.
+
 ## Quick start (lite)
 
 ```bash
