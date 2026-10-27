@@ -19,10 +19,18 @@ import typer
 from vnecom.settings import REPO_ROOT, get_settings
 
 app = typer.Typer(no_args_is_help=True, add_completion=False, help=__doc__)
+ai_app = typer.Typer(no_args_is_help=True, add_completion=False, help="AI capabilities (experimental stub).")
+app.add_typer(ai_app, name="ai")
 DBT_DIR = REPO_ROOT / "transform" / "dbt"
 logging.basicConfig(
     level=os.getenv("VNECOM_LOG_LEVEL", "INFO"), format="%(asctime)s %(levelname)s %(name)s: %(message)s"
 )
+
+
+@ai_app.command("status")
+def ai_status() -> None:
+    """Show the current availability of AI functionality."""
+    typer.echo("AI functionality is not configured; this command is a stub.")
 
 
 def _dates(start: str | None, end: str | None) -> list[date]:
