@@ -4,4 +4,10 @@ provider: openai-compatible
 base_url: https://api.openai.com/v1
 model: gpt-4o-mini
 timeout_s: 60
+# Lake reader: duckdb (local/S3 Parquet) or trino (configured coordinator/catalog/schema).
+lake_backend: duckdb
+trino_url: http://localhost:8080
+trino_user: vnecom
+trino_catalog: hive
+trino_schema: silver
 # Set VNECOM_AI_API_KEY through the environment; never store credentials here.

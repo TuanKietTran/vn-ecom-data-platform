@@ -41,8 +41,14 @@ def _require_ai() -> None:
 
 @ai_app.command("embed")
 def ai_embed() -> None:
-    """Embed the configured product corpus (P1 implementation)."""
-    typer.echo("AI embedding pipeline is not implemented yet.")
+    """Embed the configured product corpus."""
+    try:
+        from vnecom.ai.interfaces.embedding_factory import run_embedding_job_sync
+
+        typer.echo(json.dumps(run_embedding_job_sync(), indent=2))
+    except RuntimeError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(2) from exc
 
 
 @ai_app.command("serve")

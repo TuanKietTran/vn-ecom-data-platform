@@ -31,10 +31,18 @@ def test_ai_commands_show_help_without_optional_dependencies():
         assert command in result.output
 
 
-def test_ai_stub_commands_report_unimplemented_behavior():
+def test_ai_embed_invokes_pipeline_and_reports_unconfigured_backend(monkeypatch):
+    from vnecom.ai.interfaces import embedding_factory
+
+    monkeypatch.setattr(embedding_factory, "run_embedding_job_sync", lambda: {"processed": 3, "failed": 0, "indexed": 3})
+    result = CliRunner().invoke(cli.app, ["ai", "embed"])
+    assert result.exit_code == 0, result.output
+    assert '"indexed": 3' in result.output
+
+
+def test_other_ai_stub_commands_report_unimplemented_behavior():
     runner = CliRunner()
     for command, expected in (
-        ("embed", "embedding pipeline is not implemented yet"),
         ("grpc", "gRPC service is not implemented yet"),
         ("eval", "evaluation is not implemented yet"),
         ("match", "product matching is not implemented yet"),

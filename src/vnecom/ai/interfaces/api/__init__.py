@@ -3,6 +3,10 @@
 from typing import Any
 
 
+async def _health() -> dict[str, str]:
+    return {"status": "ok"}
+
+
 def create_app() -> Any:
     """Create the optional FastAPI application, importing its dependency lazily."""
     try:
@@ -11,8 +15,6 @@ def create_app() -> Any:
         raise RuntimeError("Install API dependencies with pip install 'vnecom[ai]'") from exc
     app = FastAPI(title="ShopLens API")
 
-    @app.get("/health")
-    async def health() -> dict[str, str]:
-        return {"status": "ok"}
+    app.add_api_route("/health", _health, methods=["GET"])
 
     return app
