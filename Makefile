@@ -16,7 +16,7 @@ endif
 COMPOSE := COMPOSE_PROFILES=$(PROFILES) docker compose --env-file .env -f docker/compose.yml
 
 .PHONY: help install env demo ingest silver gold dagster-dev up down logs ps trino-register \
-        test test-fast lint fmt calendar clean nuke
+        test test-fast lint fmt typecheck package calendar clean nuke
 
 help:  ## show targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-16s\033[0m %s\n",$$1,$$2}'
@@ -77,6 +77,10 @@ lint:
 	.venv/bin/ruff check . && .venv/bin/ruff format --check .
 fmt:
 	.venv/bin/ruff check --fix . && .venv/bin/ruff format .
+typecheck:  ## run mypy on the application package
+	$(PY) -m mypy
+package:  ## build wheel and source distribution
+	$(PY) -m build
 
 clean:  ## remove local lake/warehouse/dbt artefacts
 	rm -rf lake warehouse transform/dbt/target transform/dbt/logs spark-warehouse metastore_db derby.log

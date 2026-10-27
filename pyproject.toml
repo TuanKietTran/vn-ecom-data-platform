@@ -28,7 +28,7 @@ dbt = ["dbt-core>=1.9", "dbt-duckdb>=1.9", "deltalake>=0.22"]
 dagster = ["dagster>=1.9", "dagster-webserver>=1.9", "dagster-dbt>=0.25", "dagster-postgres>=0.25", "psycopg[binary]>=3.1"]
 s3 = ["s3fs>=2024.6"]
 stream = ["confluent-kafka>=2.5"]
-dev = ["pytest>=8", "ruff>=0.6", "faker>=26"]
+dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.10", "build>=1.2", "faker>=26"]
 lite = ["vnecom[spark,dbt,dagster,dev]"]
 all = ["vnecom[spark,dbt,dagster,s3,stream,dev]"]
 
@@ -46,6 +46,13 @@ extend-exclude = ["transform/dbt/target", "transform/dbt/dbt_packages"]
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM"]
 ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.11"
+mypy_path = "src"
+files = ["src/vnecom"]
+ignore_missing_imports = true
+warn_unused_configs = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
