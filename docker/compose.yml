@@ -146,10 +146,34 @@ services:
       VNECOM_AI_MODEL: ${VNECOM_AI_MODEL:-gpt-4o-mini}
       VNECOM_AI_TIMEOUT_S: ${VNECOM_AI_TIMEOUT_S:-60}
       VNECOM_AI_DATABASE_URL: postgresql://${POSTGRES_USER:-vnecom}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/shoplens
+      VNECOM_AI_DYNAMODB_ENDPOINT_URL: ${VNECOM_AI_DYNAMODB_ENDPOINT_URL:-http://dynamodb-local:8000}
+      VNECOM_AI_LANGFUSE_ENABLED: ${VNECOM_AI_LANGFUSE_ENABLED:-false}
+      VNECOM_AI_LANGFUSE_PUBLIC_KEY: ${VNECOM_AI_LANGFUSE_PUBLIC_KEY:-}
+      VNECOM_AI_LANGFUSE_SECRET_KEY: ${VNECOM_AI_LANGFUSE_SECRET_KEY:-}
+      VNECOM_AI_LANGFUSE_HOST: ${VNECOM_AI_LANGFUSE_HOST:-http://langfuse:3000}
     ports: ["${VNECOM_AI_PORT:-8000}:8000"]
     depends_on:
       postgres: { condition: service_healthy }
+      dynamodb-local: { condition: service_started }
     profiles: [ai]
+
+  dynamodb-local:
+    image: amazon/dynamodb-local:2.5.2
+    command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-inMemory"]
+    ports: ["${VNECOM_AI_DYNAMODB_PORT:-8001}:8000"]
+    profiles: [ai]
+
+  langfuse:
+    image: langfuse/langfuse:2
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-vnecom}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/langfuse
+      NEXTAUTH_URL: ${VNECOM_AI_LANGFUSE_HOST:-http://localhost:3000}
+      NEXTAUTH_SECRET: ${VNECOM_AI_LANGFUSE_NEXTAUTH_SECRET:-change-me-before-enabling}
+      SALT: ${VNECOM_AI_LANGFUSE_SALT:-change-me-before-enabling}
+    ports: ["${VNECOM_AI_LANGFUSE_PORT:-3001}:3000"]
+    depends_on:
+      postgres: { condition: service_healthy }
+    profiles: [langfuse]
 
   # ── Dagster (ORCH=dagster) ─────────────────────────────────────────────
   dagster-webserver:
