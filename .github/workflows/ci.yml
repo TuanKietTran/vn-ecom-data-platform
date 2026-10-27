@@ -79,6 +79,26 @@ jobs:
           assert {'vnecom_capture','vnecom_campaign_capture','vnecom_gold','vnecom_backfill'} <= set(b.dags), b.dags
           print(sorted(b.dags))"
 
+  compose-matrix:
+    needs: lint-unit
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        tier: [standard, full]
+        orchestrator: [dagster, airflow]
+    steps:
+      - uses: actions/checkout@v4
+      - run: cp .env.example .env
+      - name: validate compose profile
+        env:
+          TIER: ${{ matrix.tier }}
+          ORCH: ${{ matrix.orchestrator }}
+        run: |
+          profiles=core,$ORCH
+          if [ "$TIER" = full ]; then profiles="$profiles,full"; fi
+          COMPOSE_PROFILES=$profiles docker compose --env-file .env -f docker/compose.yml config --quiet
+
   images:
     needs: lint-unit
     runs-on: ubuntu-latest
