@@ -171,6 +171,14 @@ docs/              architecture & design notes, including the [ShopLens AI layer
 
 ## Testing
 
+Validate all supported Docker Compose profile combinations without starting containers:
+
+```bash
+scripts/validate-compose-profiles.sh
+```
+
+The script uses `.env.example` and checks standard/full with both Dagster and Airflow. Docker Compose is required.
+
 ```bash
 make test-fast   # unit tests, no JVM (~1s)
 make test        # + PySpark silver and dbt gold end-to-end (~2 min)

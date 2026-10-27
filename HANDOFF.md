@@ -1,6 +1,6 @@
 # Handoff — read this first (humans and Claude sessions)
 
-Owner: Kyle Tran (GitHub `TuanKietTran`). State as of 2026-10-26: code complete on `main`, **not yet on GitHub**.
+Owner: Kyle Tran (GitHub `TuanKietTran`). State as of 2026-10-26: P0 platform and AI foundation are committed; current branch may include later P1 work. Repository is **not yet on GitHub**.
 
 ## For the next Claude session
 
@@ -38,7 +38,8 @@ Owner: Kyle Tran (GitHub `TuanKietTran`). State as of 2026-10-26: code complete 
 
 ## Where things are
 
-- `README.md` — quick start, tiers, sources, marts.
+- `README.md` — quick start, tiers, sources, marts, and Compose profile validation.
+- `scripts/validate-compose-profiles.sh` — validates the standard/full Compose profile combinations using `.env.example`.
 - `docs/architecture.md` — design, scaling notes, verification status.
 - Editable handoff doc (Claude Docs): https://claude.ai/artifact/V76CxR16BnPBd6Zx9wkeHe
 
@@ -46,6 +47,7 @@ Owner: Kyle Tran (GitHub `TuanKietTran`). State as of 2026-10-26: code complete 
 
 - [x] P0 AI: document the ShopLens layer in `docs/ai.md` and the README (architecture, quick run, roadmap, demo/evaluation placeholders).
 - [ ] P1 AI: implement lake-grounded question answering with citations and an HTTP API; define persistence and safety controls.
+- [x] P1_M2 docs/ops checkpoint: document ShopLens P1 status and add `scripts/validate-compose-profiles.sh` for all supported Compose profile combinations.
 - [ ] P1 AI: implement embeddings/retrieval and cross-platform product entity resolution; populate evaluation, ER, and latency tables with measured results.
 - [ ] P1 AI: implement gRPC, embedding CLI, product-match CLI, and repeatable evaluation workflow; add demo GIF when available.
 - [ ] Publish the repo (above) and get CI green (Delta e2e + image builds).
