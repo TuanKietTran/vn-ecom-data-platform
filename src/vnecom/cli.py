@@ -200,9 +200,15 @@ def trino_ddl(bucket_prefix: str = "s3://vnecom-lake") -> None:
 def publish_hf(
     repo_id: Annotated[str, typer.Argument(help="Hub dataset repo, e.g. username/dataset")],
     yes: Annotated[bool, typer.Option("--yes", help="Confirm upload of public product data")] = False,
-    private: Annotated[bool, typer.Option("--private/--public", help="Keep dataset private (default)")] = True,
-    dry_run: Annotated[bool, typer.Option("--dry-run", help="Build dataset locally without network access")] = False,
-    output: Annotated[Path, typer.Option("--output", help="Local Parquet export directory")] = Path("hf_export"),
+    private: Annotated[
+        bool, typer.Option("--private/--public", help="Keep dataset private (default)")
+    ] = True,
+    dry_run: Annotated[
+        bool, typer.Option("--dry-run", help="Build dataset locally without network access")
+    ] = False,
+    output: Annotated[Path, typer.Option("--output", help="Local Parquet export directory")] = Path(
+        "hf_export"
+    ),
 ) -> None:
     """Publish allowlisted, redacted product-level gold data to Hugging Face."""
     from vnecom.gold import dbt_env
@@ -212,8 +218,12 @@ def publish_hf(
         raise typer.BadParameter("upload requires --yes and HF_TOKEN")
     warehouse = dbt_env(get_settings())["VNECOM_WAREHOUSE"]
     result = publish(
-        warehouse, repo_id,
-        output_dir=output, private=private, dry_run=dry_run, yes=yes,
+        warehouse,
+        repo_id,
+        output_dir=output,
+        private=private,
+        dry_run=dry_run,
+        yes=yes,
     )
     if dry_run:
         count, sources, size = result

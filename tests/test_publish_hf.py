@@ -16,7 +16,9 @@ def test_build_dataset_explicit_allowlist_and_redaction(tmp_path, monkeypatch):
 
     path = tmp_path / "warehouse.duckdb"
     with duckdb.connect(str(path)) as con:
-        con.execute("create table fct_listing_daily as select 'synthetic' source, 'shop@example.com' title, 'id-secret' seller_id, 20 price_avg_vnd")
+        con.execute(
+            "create table fct_listing_daily as select 'synthetic' source, 'shop@example.com' title, 'id-secret' seller_id, 20 price_avg_vnd"
+        )
     frame = build_dataset(path)
     assert list(frame.columns) == ["source", "title", "price_avg_vnd"]
     assert frame.iloc[0].title == "[REDACTED]"
