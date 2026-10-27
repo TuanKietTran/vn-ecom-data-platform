@@ -1,0 +1,6 @@
+# Only product-level marketplace observations from these approved sources may publish.
+allowed_sources:
+  - synthetic
+  - tiki_public
+  - lazada_public
+  - retail_jsonld
