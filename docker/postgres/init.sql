@@ -2,3 +2,4 @@
 CREATE DATABASE dagster;
 CREATE DATABASE airflow;
 CREATE DATABASE superset;
+CREATE DATABASE shoplens;

@@ -133,6 +133,24 @@ services:
     depends_on: [spark-master]
     profiles: [core]
 
+  # ── ShopLens AI API (TIER=ai) ─────────────────────────────────────────
+  ai-api:
+    image: vnecom/ai:local
+    build: { context: .., dockerfile: docker/ai.Dockerfile }
+    command: ["vnecom", "ai", "serve", "--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      VNECOM_AI_ENABLED: ${VNECOM_AI_ENABLED:-false}
+      VNECOM_AI_PROVIDER: ${VNECOM_AI_PROVIDER:-openai-compatible}
+      VNECOM_AI_BASE_URL: ${VNECOM_AI_BASE_URL:-https://api.openai.com/v1}
+      VNECOM_AI_API_KEY: ${VNECOM_AI_API_KEY:-}
+      VNECOM_AI_MODEL: ${VNECOM_AI_MODEL:-gpt-4o-mini}
+      VNECOM_AI_TIMEOUT_S: ${VNECOM_AI_TIMEOUT_S:-60}
+      VNECOM_AI_DATABASE_URL: postgresql://${POSTGRES_USER:-vnecom}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/shoplens
+    ports: ["${VNECOM_AI_PORT:-8000}:8000"]
+    depends_on:
+      postgres: { condition: service_healthy }
+    profiles: [ai]
+
   # ── Dagster (ORCH=dagster) ─────────────────────────────────────────────
   dagster-webserver:
     <<: *platform
