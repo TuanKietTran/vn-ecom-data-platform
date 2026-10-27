@@ -44,6 +44,10 @@ Owner: Kyle Tran (GitHub `TuanKietTran`). State as of 2026-10-26: code complete 
 
 ## Open items
 
+- [x] P0 AI: document the ShopLens layer in `docs/ai.md` and the README (architecture, quick run, roadmap, demo/evaluation placeholders).
+- [ ] P1 AI: implement lake-grounded question answering with citations and an HTTP API; define persistence and safety controls.
+- [ ] P1 AI: implement embeddings/retrieval and cross-platform product entity resolution; populate evaluation, ER, and latency tables with measured results.
+- [ ] P1 AI: implement gRPC, embedding CLI, product-match CLI, and repeatable evaluation workflow; add demo GIF when available.
 - [ ] Publish the repo (above) and get CI green (Delta e2e + image builds).
 - [ ] Boot `make up TIER=standard ORCH=dagster` on a real machine.
 - [ ] Run each live source once with real credentials/keywords; fix any drifted field mapping (Sendo, Lazada public least certain).

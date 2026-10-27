@@ -138,6 +138,17 @@ Public endpoints are undocumented and change; payload mapping reads several know
 connector has a mocked-HTTP test pinning the shape it expects. Add a source: subclass `Connector`, register it
 in `src/vnecom/ingest/registry.py`, add it to `config/platforms.yaml`.
 
+## AI layer (ShopLens)
+
+The optional AI layer adds a P0 OpenAI-compatible text-generation foundation without importing AI frameworks into the core CLI. Configure `VNECOM_AI_API_KEY` through the environment; see [`docs/ai.md`](docs/ai.md) for configuration, the lake-to-API architecture, the phase roadmap, and evaluation/ER/latency placeholders. The P1 API, retrieval, grounded answers, product matching, and evaluation are not implemented yet.
+
+Run the current text-generation path with one command (requires a configured key and reachable compatible endpoint):
+
+```bash
+.venv/bin/python -c 'from vnecom.ai.interfaces.factory import build_text_pipeline; print(build_text_pipeline().run("Summarize the e-commerce data platform").text)'
+```
+
+
 ## Layout
 
 ```
@@ -147,7 +158,7 @@ transform/dbt/     staging -> intermediate -> marts (+ seeds: campaign calendar,
 orchestration/     dagster/ (assets, checks, schedules) · airflow/dags/
 docker/            platform + airflow images, compose with tier profiles, trino/superset config
 tests/             unit + Spark/dbt end-to-end (run on parquet and delta in CI)
-docs/              architecture & design notes
+docs/              architecture & design notes, including the [ShopLens AI layer](docs/ai.md)
 ```
 
 ## Customising
