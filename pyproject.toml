@@ -28,9 +28,12 @@ dbt = ["dbt-core>=1.9", "dbt-duckdb>=1.9", "deltalake>=0.22"]
 dagster = ["dagster>=1.9", "dagster-webserver>=1.9", "dagster-dbt>=0.25", "dagster-postgres>=0.25", "psycopg[binary]>=3.1"]
 s3 = ["s3fs>=2024.6"]
 stream = ["confluent-kafka>=2.5"]
-dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.10", "build>=1.2", "faker>=26"]
+ai = ["fastapi>=0.110", "uvicorn>=0.29", "sse-starlette>=2.1", "grpcio>=1.64", "grpcio-tools>=1.64", "protobuf>=5", "langgraph>=0.2", "langgraph-checkpoint-postgres>=2", "langgraph-checkpoint-sqlite>=2", "langchain-core>=0.3", "psycopg[binary,pool]>=3.2", "pgvector>=0.3", "boto3>=1.34", "sqlglot>=25"]
+ai-eval = ["ragas>=0.2", "deepeval>=1.0", "langfuse>=2", "opentelemetry-api>=1.25"]
+ai-local = ["sentence-transformers>=3"]
+dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.10", "pytest-asyncio>=0.24", "testcontainers>=4", "build>=1.2", "faker>=26"]
 lite = ["vnecom[spark,dbt,dagster,dev]"]
-all = ["vnecom[spark,dbt,dagster,s3,stream,dev]"]
+all = ["vnecom[spark,dbt,dagster,s3,stream,ai,ai-eval,dev]"]
 
 [project.scripts]
 vnecom = "vnecom.cli:app"
@@ -50,7 +53,8 @@ ignore = ["E501"]
 [tool.mypy]
 python_version = "3.11"
 mypy_path = "src"
-files = ["src/vnecom"]
+files = ["src/vnecom/ai"]
+strict = true
 ignore_missing_imports = true
 warn_unused_configs = true
 

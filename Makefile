@@ -16,7 +16,7 @@ endif
 COMPOSE := COMPOSE_PROFILES=$(PROFILES) docker compose --env-file .env -f docker/compose.yml
 
 .PHONY: help install env demo ingest silver gold dagster-dev up down logs ps trino-register \
-        test test-fast lint fmt typecheck package calendar clean nuke
+        test test-fast lint fmt typecheck package ai-install ai-up ai-embed ai-serve ai-test ai-eval calendar clean nuke
 
 help:  ## show targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-16s\033[0m %s\n",$$1,$$2}'
@@ -81,6 +81,18 @@ typecheck:  ## run mypy on the application package
 	$(PY) -m mypy
 package:  ## build wheel and source distribution
 	$(PY) -m build
+ai-install:  ## install optional AI dependencies into the active environment
+	$(PY) -m pip install -e ".[ai,dev]"
+ai-up:  ## AI service stack (P1)
+	@echo "P1: AI service stack is not implemented"
+ai-embed:  ## run AI corpus embedding stub
+	$(VN) ai embed
+ai-serve:  ## run AI API stub
+	$(VN) ai serve
+ai-test:  ## run AI unit tests
+	$(PY) -m pytest -q tests/ai
+ai-eval:  ## run AI evaluation stub
+	$(VN) ai eval
 
 clean:  ## remove local lake/warehouse/dbt artefacts
 	rm -rf lake warehouse transform/dbt/target transform/dbt/logs spark-warehouse metastore_db derby.log
