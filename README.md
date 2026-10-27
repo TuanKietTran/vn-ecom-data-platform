@@ -177,7 +177,7 @@ Validate all supported Docker Compose profile combinations without starting cont
 scripts/validate-compose-profiles.sh
 ```
 
-The script uses `.env.example` and checks standard/full with both Dagster and Airflow. Docker Compose is required.
+The script uses `.env.example`, confirms the default profile excludes the AI API, and checks standard/full with both Dagster and Airflow both with and without the `ai` profile. It verifies the expected services (`ai-api`, orchestrator, and full-tier services) are exposed or excluded. The API uses the `VNECOM_AI_*` settings defined in `src/vnecom/ai/config.py`. Docker Compose is required.
 
 ```bash
 make test-fast   # unit tests, no JVM (~1s)

@@ -39,7 +39,7 @@ Owner: Kyle Tran (GitHub `TuanKietTran`). State as of 2026-10-26: P0 platform an
 ## Where things are
 
 - `README.md` — quick start, tiers, sources, marts, and Compose profile validation.
-- `scripts/validate-compose-profiles.sh` — validates the standard/full Compose profile combinations using `.env.example`.
+- `scripts/validate-compose-profiles.sh` — validates default service exclusion and standard/full Compose combinations with and without AI, using `.env.example`.
 - `docs/architecture.md` — design, scaling notes, verification status.
 - Editable handoff doc (Claude Docs): https://claude.ai/artifact/V76CxR16BnPBd6Zx9wkeHe
 
