@@ -56,6 +56,7 @@ def main() -> None:
     ap.add_argument("--rate", type=float, default=20.0, help="events per second")
     ap.add_argument("--products", type=int, default=50, help="listings per platform to tick")
     ap.add_argument("--count", type=int, help="send a finite number of events, then flush")
+    ap.add_argument("--topic", default=TOPIC, help="Kafka topic")
     a = ap.parse_args()
     if a.rate <= 0 or a.products <= 0 or (a.count is not None and a.count <= 0):
         ap.error("rate, products, and count must be positive")
@@ -68,7 +69,7 @@ def main() -> None:
     i = 0
     while total is None or i < total:
         ev = next(source)
-        prod.produce(TOPIC, key=f"{ev['platform']}:{ev['product_id']}", value=json.dumps(ev))
+        prod.produce(a.topic, key=f"{ev['platform']}:{ev['product_id']}", value=json.dumps(ev))
         prod.poll(0)
         i += 1
         if total is None or i < total:
