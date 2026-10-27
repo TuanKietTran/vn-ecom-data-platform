@@ -93,5 +93,14 @@ PySpark silver → dbt gold (31/31 dbt nodes passing); Dagster materialisation o
 with asset checks; Airflow `dags test` of `vnecom_capture`, `vnecom_gold`, `vnecom_campaign_capture`.
 
 Covered by CI but not run in the authoring sandbox (no Maven/Docker Hub access there): the Delta format path,
-image builds, and the docker-compose stacks. Real-platform connectors are implemented against published
-docs and unit-tested with mocked HTTP; run them against your own credentials before relying on them.
+image builds, and the docker-compose stacks. Credentialed connectors (`shopee_open`, `lazada_open`, `tiktok_open`, `shopee_affiliate`, `accesstrade`) are contract-verified against the official API documentation and mocked HTTP fixtures only; they are **NOT live-verified**. No credentials are included or required for tests, and no authenticated requests have been made. Provider APIs, permissions, app versions, and account-specific schemas may differ; do not treat mocked contract tests as proof of live access.
+
+Exact environment variables required (set only for a provider you are authorized to use):
+
+* `shopee_open`: `SHOPEE_PARTNER_ID`, `SHOPEE_PARTNER_KEY`, `SHOPEE_SHOP_ID`, `SHOPEE_ACCESS_TOKEN`.
+* `lazada_open`: `LAZADA_APP_KEY`, `LAZADA_APP_SECRET`, `LAZADA_ACCESS_TOKEN`.
+* `tiktok_open`: `TIKTOK_APP_KEY`, `TIKTOK_APP_SECRET`, `TIKTOK_ACCESS_TOKEN`, `TIKTOK_SHOP_CIPHER`.
+* `shopee_affiliate`: `SHOPEE_AFFILIATE_APP_ID`, `SHOPEE_AFFILIATE_SECRET` (optional query configuration: `SHOPEE_AFFILIATE_KEYWORDS`).
+* `accesstrade`: `ACCESSTRADE_TOKEN` (optional feed configuration: `ACCESSTRADE_DOMAINS`, `ACCESSTRADE_PAGE_SIZE`).
+
+Values are read from environment variables or the repository `.env`; see `.env.example` for defaults and host overrides.
