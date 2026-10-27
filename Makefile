@@ -3,6 +3,7 @@
 TIER  ?= lite
 ORCH  ?= dagster
 DAYS  ?= 45
+AI    ?= 0
 PY    ?= .venv/bin/python
 VN    ?= .venv/bin/vnecom
 START ?= $(shell date -d "-$(DAYS) days" +%F 2>/dev/null || date -v-$(DAYS)d +%F)
@@ -13,10 +14,16 @@ ifeq ($(TIER),full)
 else
   PROFILES := core,$(ORCH)
 endif
+ifeq ($(AI),1)
+  ifeq ($(TIER),lite)
+    $(error AI=1 requires TIER=standard or TIER=full; lite does not use containers)
+  endif
+  PROFILES := $(PROFILES),ai
+endif
 COMPOSE := COMPOSE_PROFILES=$(PROFILES) docker compose --env-file .env -f docker/compose.yml
 
 .PHONY: help install env demo ingest silver gold dagster-dev up down logs ps trino-register \
-        test test-fast lint fmt typecheck package ai-install ai-up ai-embed ai-serve ai-test ai-eval calendar clean nuke
+        test test-fast lint fmt typecheck package ai-install ai-up ai-embed ai-serve ai-test ai-eval db-setup calendar clean nuke
 
 help:  ## show targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-16s\033[0m %s\n",$$1,$$2}'
@@ -83,8 +90,12 @@ package:  ## build wheel and source distribution
 	$(PY) -m build
 ai-install:  ## install optional AI dependencies into the active environment
 	$(PY) -m pip install -e ".[ai,dev]"
-ai-up:  ## AI service stack (P1)
-	@echo "P1: AI service stack is not implemented"
+ai-up: env  ## start the AI service profile (TIER=standard|full)
+	@test "$(TIER)" != "lite" || (echo "AI services require containers: use TIER=standard or TIER=full"; exit 1)
+	$(COMPOSE) up -d --build
+
+db-setup: env  ## create the isolated ShopLens database (safe to rerun)
+	$(COMPOSE) exec -T postgres sh -ec 'if ! psql -U "$$POSTGRES_USER" -d postgres -Atqc "SELECT 1 FROM pg_database WHERE datname = '\''shoplens'\''" | grep -q 1; then createdb -U "$$POSTGRES_USER" shoplens; fi'
 ai-embed:  ## run AI corpus embedding stub
 	$(VN) ai embed
 ai-serve:  ## run AI API stub
