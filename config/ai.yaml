@@ -1,0 +1,7 @@
+# Defaults for the optional AI module. Environment variables use VNECOM_AI_ prefix.
+enabled: false
+provider: openai-compatible
+base_url: https://api.openai.com/v1
+model: gpt-4o-mini
+timeout_s: 60
+# Set VNECOM_AI_API_KEY through the environment; never store credentials here.
