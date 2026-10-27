@@ -205,16 +205,25 @@ def publish_hf(
     output: Annotated[Path, typer.Option("--output", help="Local Parquet export directory")] = Path("hf_export"),
 ) -> None:
     """Publish allowlisted, redacted product-level gold data to Hugging Face."""
-    from vnecom.publish_hf import publish
     from vnecom.gold import dbt_env
+    from vnecom.publish_hf import publish
 
     if not dry_run and (not yes or not os.environ.get("HF_TOKEN")):
         raise typer.BadParameter("upload requires --yes and HF_TOKEN")
-    count = publish(
-        dbt_env(get_settings())["VNECOM_WAREHOUSE"], repo_id,
+    warehouse = dbt_env(get_settings())["VNECOM_WAREHOUSE"]
+    result = publish(
+        warehouse, repo_id,
         output_dir=output, private=private, dry_run=dry_run, yes=yes,
     )
+    if dry_run:
+        count, sources, size = result
+    else:
+        count, sources, size = result, {}, 0
     typer.echo(f"{'would publish' if dry_run else 'published'} {count} product rows")
+    if dry_run:
+        typer.echo(f"Parquet: {size} bytes ({output / 'products.parquet'})")
+        for source, rows in sorted(sources.items()):
+            typer.echo(f"{source}: {rows} rows")
 
 
 @app.command()
