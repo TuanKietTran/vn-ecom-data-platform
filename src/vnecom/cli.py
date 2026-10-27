@@ -11,7 +11,7 @@ import sys
 import uuid
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, NoReturn
 from zoneinfo import ZoneInfo
 
 import typer
@@ -27,12 +27,16 @@ logging.basicConfig(
 )
 
 
+def _missing_ai_dependencies() -> NoReturn:
+    typer.echo("AI dependencies are missing; install with: pip install 'vnecom[ai]'", err=True)
+    raise typer.Exit(2)
+
+
 def _require_ai() -> None:
     import importlib.util
 
     if importlib.util.find_spec("fastapi") is None:
-        typer.echo("AI dependencies are missing; install with: pip install 'vnecom[ai]'", err=True)
-        raise typer.Exit(2)
+        _missing_ai_dependencies()
 
 
 @ai_app.command("embed")
@@ -49,7 +53,11 @@ def ai_serve(host: str = "127.0.0.1", port: int = 8000) -> None:
 
     from vnecom.ai.interfaces.api import create_app
 
-    uvicorn.run(create_app(), host=host, port=port)
+    try:
+        application = create_app()
+    except RuntimeError:
+        _missing_ai_dependencies()
+    uvicorn.run(application, host=host, port=port)
 
 
 @ai_app.command("grpc")

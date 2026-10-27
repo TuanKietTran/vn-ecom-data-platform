@@ -56,3 +56,15 @@ def test_ai_serve_reports_missing_extra(monkeypatch):
     result = CliRunner().invoke(cli.app, ["ai", "serve"])
     assert result.exit_code == 2
     assert "pip install 'vnecom[ai]'" in result.output
+
+
+def test_ai_serve_reports_missing_extra_when_factory_raises_runtime_error(monkeypatch):
+    import vnecom.ai.interfaces.api as api
+
+    def missing_dependencies():
+        raise RuntimeError("missing API dependencies")
+
+    monkeypatch.setattr(api, "create_app", missing_dependencies)
+    result = CliRunner().invoke(cli.app, ["ai", "serve"])
+    assert result.exit_code == 2
+    assert "pip install 'vnecom[ai]'" in result.output
