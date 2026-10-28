@@ -23,7 +23,7 @@ endif
 COMPOSE := COMPOSE_PROFILES=$(PROFILES) docker compose --env-file .env -f docker/compose.yml
 
 .PHONY: help install env demo ingest silver gold dagster-dev up down logs ps trino-register \
-        test test-fast lint fmt typecheck package ai-install ai-up ai-embed ai-serve ai-test ai-eval db-setup calendar clean nuke
+        test test-fast lint fmt typecheck package ai-install ai-up ai-db-setup ai-embed ai-serve ai-test ai-eval db-setup calendar clean nuke
 
 help:  ## show targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-16s\033[0m %s\n",$$1,$$2}'
@@ -92,10 +92,13 @@ ai-install:  ## install optional AI dependencies into the active environment
 	$(PY) -m pip install -e ".[ai,dev]"
 ai-up: env  ## start the AI service profile (TIER=standard|full)
 	@test "$(TIER)" != "lite" || (echo "AI services require containers: use TIER=standard or TIER=full"; exit 1)
-	$(COMPOSE) up -d --build
+	$(MAKE) up TIER=$(TIER) ORCH=$(ORCH) AI=1
+	$(MAKE) ai-db-setup TIER=$(TIER) ORCH=$(ORCH) AI=1
 
-db-setup: env  ## create the isolated ShopLens database (safe to rerun)
-	$(COMPOSE) exec -T postgres sh -ec 'if ! psql -U "$$POSTGRES_USER" -d postgres -Atqc "SELECT 1 FROM pg_database WHERE datname = '\''shoplens'\''" | grep -q 1; then createdb -U "$$POSTGRES_USER" shoplens; fi'
+ai-db-setup: env  ## create ShopLens DB and install pgvector (safe for existing volumes)
+	$(COMPOSE) exec -T postgres sh -ec 'if ! psql -U "$$POSTGRES_USER" -d postgres -Atqc "SELECT 1 FROM pg_database WHERE datname = '\''shoplens'\''" | grep -q 1; then createdb -U "$$POSTGRES_USER" shoplens; fi; psql -U "$$POSTGRES_USER" -d shoplens -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS vector"'
+
+db-setup: ai-db-setup  ## legacy alias for ai-db-setup
 ai-embed:  ## run AI corpus embedding stub
 	$(VN) ai embed
 ai-serve:  ## run AI API stub
