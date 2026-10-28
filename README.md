@@ -140,7 +140,7 @@ in `src/vnecom/ingest/registry.py`, add it to `config/platforms.yaml`.
 
 ## AI layer (ShopLens)
 
-The optional AI layer adds a P0 OpenAI-compatible text-generation foundation without importing AI frameworks into the core CLI. Configure `VNECOM_AI_API_KEY` through the environment; see [`docs/ai.md`](docs/ai.md) for configuration, the lake-to-API architecture, the phase roadmap, and evaluation/ER/latency placeholders. The P1 API, retrieval, grounded answers, product matching, and evaluation are not implemented yet.
+The optional AI layer adds OpenAI-compatible browser/API chat over recent gold platform metrics without importing AI frameworks into the core CLI. Install `.[lite,ai]`, configure `VNECOM_AI_ENABLED`, `VNECOM_AI_API_KEY`, and optionally `VNECOM_AI_BASE_URL` / `VNECOM_AI_MODEL`, then run `.venv/bin/vnecom ai serve`. Gemma or GPT-OSS can use a compatible serving endpoint; model weights and local serving are configured separately. See [`docs/ai.md`](docs/ai.md) for setup, limitations, and tests. Product-level retrieval, matching, gRPC, and evaluation remain unfinished.
 
 Run the current text-generation path with one command (requires a configured key and reachable compatible endpoint):
 

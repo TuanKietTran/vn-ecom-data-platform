@@ -18,6 +18,7 @@ class OpenAICompatibleModel:
         messages: list[dict[str, str]] = []
         if request.system_prompt:
             messages.append({"role": "system", "content": request.system_prompt})
+        messages.extend({"role": role, "content": content} for role, content in request.history)
         messages.append({"role": "user", "content": request.prompt})
         payload: dict[str, object] = {
             "model": request.model or self.settings.model,

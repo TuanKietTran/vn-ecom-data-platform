@@ -48,6 +48,7 @@ class GenerationRequest:
     temperature: float = 0.0
     max_tokens: int | None = None
     metadata: dict[str, str] = field(default_factory=dict)
+    history: tuple[tuple[str, str], ...] = ()
 
     def __post_init__(self) -> None:
         if not self.prompt.strip():
@@ -56,6 +57,8 @@ class GenerationRequest:
             raise ValueError("temperature must be between 0 and 2")
         if self.max_tokens is not None and self.max_tokens < 1:
             raise ValueError("max_tokens must be positive")
+        if any(role not in {"user", "assistant"} or not text.strip() for role, text in self.history):
+            raise ValueError("history must contain non-empty user or assistant messages")
 
 
 @dataclass(frozen=True, slots=True)
