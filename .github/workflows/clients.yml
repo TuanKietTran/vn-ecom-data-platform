@@ -1,5 +1,6 @@
 name: clients
 on:
+  workflow_dispatch:
   push:
     paths: ['apps/**', 'packages/**', 'package*.json', 'scripts/test-clients.py', '.github/workflows/clients.yml']
   pull_request:
