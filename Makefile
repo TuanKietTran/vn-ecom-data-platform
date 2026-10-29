@@ -95,7 +95,7 @@ ai-up: env  ## start the AI service profile (TIER=standard|full)
 	$(MAKE) up TIER=$(TIER) ORCH=$(ORCH) AI=1
 	$(MAKE) ai-db-setup TIER=$(TIER) ORCH=$(ORCH) AI=1
 
-ai-db-setup: env  ## create ShopLens DB and install pgvector (safe for existing volumes)
+ai-db-setup: env  ## create Hunt AI DB and install pgvector (safe for existing volumes)
 	$(COMPOSE) exec -T postgres sh -ec 'if ! psql -U "$$POSTGRES_USER" -d postgres -Atqc "SELECT 1 FROM pg_database WHERE datname = '\''shoplens'\''" | grep -q 1; then createdb -U "$$POSTGRES_USER" shoplens; fi; psql -U "$$POSTGRES_USER" -d shoplens -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS vector"'
 
 db-setup: ai-db-setup  ## legacy alias for ai-db-setup

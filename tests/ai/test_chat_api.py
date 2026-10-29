@@ -64,7 +64,7 @@ def test_chat_sends_gold_and_history_to_compatible_provider(warehouse):
             assert client.get("/health").json() == {"status": "ok"}
             assert client.get("/ready").status_code == 200
             page = client.get("/")
-            assert page.status_code == 200 and "ShopLens" in page.text
+            assert page.status_code == 200 and "Hunt" in page.text
             response = client.post(
                 "/chat",
                 json={

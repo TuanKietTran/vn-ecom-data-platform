@@ -1,4 +1,4 @@
-"""Framework-independent ShopLens entities, values, and repository contracts."""
+"""Framework-independent Hunt entities, values, and repository contracts."""
 
 from vnecom.ai.domain.entities import Answer, Citation, Listing, Product
 from vnecom.ai.domain.repositories import ListingRepository, ProductRepository

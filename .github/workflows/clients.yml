@@ -34,4 +34,4 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - run: xcodebuild -project apps/ios/ShopLens.xcodeproj -scheme ShopLens -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+      - run: xcodebuild -project apps/ios/Hunt.xcodeproj -scheme Hunt -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build

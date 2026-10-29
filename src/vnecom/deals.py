@@ -73,6 +73,29 @@ class Eligibility(BaseModel):
     new_user: bool | None = None
 
 
+class UpcomingDeal(BaseModel):
+    """A supplied future voucher window; deliberately contains no price or availability claim."""
+
+    model_config = ConfigDict(extra="forbid")
+    code: str
+    platform: str
+    seller: str | None = None
+    product_keys: list[str]
+    starts_at: AwareDatetime
+    expires_at: AwareDatetime
+    discount_vnd: Money
+    percent: Annotated[int, Field(strict=True, ge=0, le=100)]
+    cap_vnd: Money | None
+    min_spend_vnd: Money
+    eligibility: list[str]
+    checkout_payment_method: str | None
+    cashback_vnd: Money
+    evidence_source: str
+    evidence_url: HttpUrl | None
+    as_of: AwareDatetime
+    synthetic: bool
+
+
 class Catalog(BaseModel):
     model_config = ConfigDict(extra="forbid")
     offers: list[Offer] = Field(max_length=10000)
@@ -230,6 +253,57 @@ def estimate(
                     )
                 )
     return results
+
+
+def upcoming(
+    catalog: Catalog,
+    *,
+    include_synthetic: bool = False,
+    now: datetime | None = None,
+    limit: int = 20,
+) -> list[UpcomingDeal]:
+    """Return only explicitly supplied vouchers whose start timestamp is still in the future."""
+    now = now or datetime.now(UTC)
+    if now.tzinfo is None:
+        raise ValueError("now must be timezone-aware")
+    if not 1 <= limit <= 100:
+        raise ValueError("limit must be between 1 and 100")
+    values = []
+    for voucher in catalog.vouchers:
+        if voucher.starts_at <= now or voucher.expires_at <= now:
+            continue
+        synthetic = voucher.source_tier == "synthetic"
+        if synthetic and not include_synthetic:
+            continue
+        requirements = []
+        if voucher.payment_method:
+            requirements.append(f"Checkout payment method: {voucher.payment_method}")
+        if voucher.membership:
+            requirements.append(f"Membership: {voucher.membership}")
+        if voucher.new_user_only:
+            requirements.append("New users only")
+        values.append(
+            UpcomingDeal(
+                code=voucher.code,
+                platform=voucher.platform,
+                seller=voucher.seller,
+                product_keys=voucher.product_keys,
+                starts_at=voucher.starts_at,
+                expires_at=voucher.expires_at,
+                discount_vnd=voucher.discount_vnd,
+                percent=voucher.percent,
+                cap_vnd=voucher.cap_vnd,
+                min_spend_vnd=voucher.min_spend_vnd,
+                eligibility=requirements,
+                checkout_payment_method=voucher.payment_method,
+                cashback_vnd=voucher.cashback_vnd,
+                evidence_source=voucher.source_tier,
+                evidence_url=voucher.evidence_url,
+                as_of=voucher.checked_at,
+                synthetic=synthetic,
+            )
+        )
+    return sorted(values, key=lambda value: (value.starts_at, value.platform, value.code))[:limit]
 
 
 def hunt(catalog: Catalog, request: DealSearch, *, now: datetime | None = None) -> dict[str, list[Deal]]:

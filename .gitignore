@@ -35,6 +35,8 @@ apps/android/**/build/
 apps/android/local.properties
 apps/ios/**/xcuserdata/
 apps/ios/DerivedData/
-artifacts/
+artifacts/*
+!artifacts/clients/
+!artifacts/clients/**
 apps/android/.idea/
 .DS_Store

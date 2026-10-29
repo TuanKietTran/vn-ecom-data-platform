@@ -1,5 +1,5 @@
 {
-  "name": "shoplens-clients",
+  "name": "hunt-clients",
   "private": true,
   "workspaces": [
     "apps/web",
@@ -7,12 +7,12 @@
     "packages/contracts"
   ],
   "scripts": {
-    "build": "npm run build -w @shoplens/contracts && npm run build -w @shoplens/gateway && npm run build -w @shoplens/web",
+    "build": "npm run build -w @hunt/contracts && npm run build -w @hunt/gateway && npm run build -w @hunt/web",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "dev": "concurrently -n gateway,web 'npm run dev -w @shoplens/gateway' 'npm run dev -w @shoplens/web'",
-    "predev": "npm run build -w @shoplens/contracts",
+    "dev": "concurrently -n gateway,web 'npm run dev -w @hunt/gateway' 'npm run dev -w @hunt/web'",
+    "predev": "npm run build -w @hunt/contracts",
     "format": "prettier --write \"apps/{web,gateway}/**/*.{ts,tsx,css,json}\" \"packages/**/*.ts\" package.json",
-    "test:clients": ".venv/bin/python scripts/test-clients.py"
+    "test:clients": "uv run --extra ai --extra dev python scripts/test-clients.py"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

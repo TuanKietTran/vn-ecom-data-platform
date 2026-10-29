@@ -1,1 +1,1 @@
-"""ShopLens AI layer tests."""
+"""Hunt AI layer tests."""

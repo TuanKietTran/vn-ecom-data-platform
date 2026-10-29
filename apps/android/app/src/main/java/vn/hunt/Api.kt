@@ -1,4 +1,4 @@
-package vn.shoplens
+package vn.hunt
 
 import java.net.HttpURLConnection
 import java.net.URI

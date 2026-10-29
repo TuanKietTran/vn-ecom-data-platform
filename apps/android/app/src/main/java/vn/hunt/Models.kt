@@ -1,4 +1,4 @@
-package vn.shoplens
+package vn.hunt
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -57,6 +57,34 @@ data class Product(
     @SerialName("price_vnd") val price: Long,
     @SerialName("captured_at") val captured: String,
     val url: String? = null,
+)
+
+@Serializable
+ data class UpcomingDeal(
+    val code: String,
+    val platform: String,
+    val seller: String? = null,
+    @SerialName("product_keys") val productKeys: List<String> = emptyList(),
+    @SerialName("starts_at") val startsAt: String,
+    @SerialName("expires_at") val expiresAt: String,
+    @SerialName("discount_vnd") val discount: Long,
+    val percent: Int,
+    @SerialName("cap_vnd") val cap: Long? = null,
+    @SerialName("min_spend_vnd") val minimumSpend: Long,
+    val eligibility: List<String> = emptyList(),
+    @SerialName("checkout_payment_method") val checkoutPaymentMethod: String? = null,
+    @SerialName("cashback_vnd") val cashback: Long,
+    @SerialName("evidence_source") val evidenceSource: String,
+    @SerialName("evidence_url") val evidenceUrl: String? = null,
+    @SerialName("as_of") val asOf: String,
+    val synthetic: Boolean,
+) { val id: String get() = "$platform:$code" }
+
+@Serializable
+ data class UpcomingResults(
+    val deals: List<UpcomingDeal> = emptyList(),
+    @SerialName("synthetic_included") val syntheticIncluded: Boolean = false,
+    val notice: String = "",
 )
 
 @Serializable data class Products(val products: List<Product>)

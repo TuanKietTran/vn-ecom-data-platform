@@ -32,6 +32,27 @@ struct Deal: Codable, Identifiable {
     var id: String { offer.offerId }
 }
 struct DealResults: Decodable { let eligible: [Deal]; let conditional: [Deal]; let fewestConditions: [Deal]; let priceHistory: [Deal]?; let notice: String }
+struct UpcomingDeal: Codable, Identifiable {
+    let code: String
+    let platform: String
+    let seller: String?
+    let productKeys: [String]
+    let startsAt: String
+    let expiresAt: String
+    let discountVnd: Int64
+    let percent: Int
+    let capVnd: Int64?
+    let minSpendVnd: Int64
+    let eligibility: [String]
+    let checkoutPaymentMethod: String?
+    let cashbackVnd: Int64
+    let evidenceSource: String
+    let evidenceUrl: String?
+    let asOf: String
+    let synthetic: Bool
+    var id: String { platform + ":" + code }
+}
+struct UpcomingResults: Decodable { let deals: [UpcomingDeal]; let syntheticIncluded: Bool; let notice: String }
 struct Product: Decodable, Identifiable { let indexId: String; let title: String; let platform: String; let sourceTier: String; let priceVnd: Int64; let capturedAt: String; let url: String?; var id: String { indexId } }
 struct ProductResults: Decodable { let products: [Product] }
 struct Status: Decodable { let dataAvailable: Bool; let modelConfigured: Bool; let model: String }

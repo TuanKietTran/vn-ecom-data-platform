@@ -1,0 +1,37 @@
+// !$*UTF8*$!
+{
+ archiveVersion = 1; classes = {}; objectVersion = 77;
+ objects = {
+  A00000000000000000000001 = {isa = PBXProject; attributes = {LastUpgradeCheck = 1600; TargetAttributes = {A00000000000000000000011 = {CreatedOnToolsVersion = 16.0; TestTargetID = A00000000000000000000005;};};}; buildConfigurationList = A00000000000000000000002; compatibilityVersion = "Xcode 16.0"; developmentRegion = en; knownRegions = (en, Base,); mainGroup = A00000000000000000000003; productRefGroup = A00000000000000000000004; projectDirPath = ""; projectRoot = ""; targets = (A00000000000000000000005,A00000000000000000000011,);};
+  A00000000000000000000002 = {isa = XCConfigurationList; buildConfigurations = (A00000000000000000000006,A00000000000000000000007,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;};
+  A00000000000000000000003 = {isa = PBXGroup; children = (A00000000000000000000008,A00000000000000000000019,A00000000000000000000004,); sourceTree = "<group>";};
+  A00000000000000000000004 = {isa = PBXGroup; children = (A00000000000000000000009,A00000000000000000000015,); name = Products; sourceTree = "<group>";};
+  A00000000000000000000005 = {isa = PBXNativeTarget; buildConfigurationList = A0000000000000000000000A; buildPhases = (A0000000000000000000000B,A0000000000000000000000C,A0000000000000000000000D,); buildRules = (); dependencies = (); fileSystemSynchronizedGroups = (A00000000000000000000008,); name = Hunt; productName = Hunt; productReference = A00000000000000000000009; productType = "com.apple.product-type.application";};
+  A00000000000000000000006 = {isa = XCBuildConfiguration; buildSettings = {CLANG_ENABLE_MODULES = YES; SDKROOT = iphoneos; IPHONEOS_DEPLOYMENT_TARGET = 17.0; SWIFT_VERSION = 5.0;}; name = Debug;};
+  A00000000000000000000007 = {isa = XCBuildConfiguration; buildSettings = {CLANG_ENABLE_MODULES = YES; SDKROOT = iphoneos; IPHONEOS_DEPLOYMENT_TARGET = 17.0; SWIFT_VERSION = 5.0;}; name = Release;};
+  A00000000000000000000008 = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A00000000000000000000010,); path = Hunt; sourceTree = "<group>";};
+  A00000000000000000000009 = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Hunt.app; sourceTree = BUILT_PRODUCTS_DIR;};
+  A0000000000000000000000A = {isa = XCConfigurationList; buildConfigurations = (A0000000000000000000000E,A0000000000000000000000F,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;};
+  A0000000000000000000000B = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0;};
+  A0000000000000000000000C = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0;};
+  A0000000000000000000000D = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0;};
+  A0000000000000000000000E = {isa = XCBuildConfiguration; buildSettings = {PRODUCT_BUNDLE_IDENTIFIER = vn.hunt.app; PRODUCT_NAME = "$(TARGET_NAME)"; ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon; INFOPLIST_FILE = Hunt/InfoDebug.plist; TARGETED_DEVICE_FAMILY = "1,2"; CODE_SIGN_STYLE = Manual; SWIFT_EMIT_LOC_STRINGS = YES;}; name = Debug;};
+  A0000000000000000000000F = {isa = XCBuildConfiguration; buildSettings = {PRODUCT_BUNDLE_IDENTIFIER = vn.hunt.app; PRODUCT_NAME = "$(TARGET_NAME)"; ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon; INFOPLIST_FILE = Hunt/InfoRelease.plist; TARGETED_DEVICE_FAMILY = "1,2"; CODE_SIGN_STYLE = Manual; SWIFT_EMIT_LOC_STRINGS = YES;}; name = Release;};
+  A00000000000000000000010 = {isa = PBXFileSystemSynchronizedBuildFileExceptionSet; membershipExceptions = (InfoDebug.plist,InfoRelease.plist,); target = A00000000000000000000005;};
+
+ A00000000000000000000011 = {isa = PBXNativeTarget; buildConfigurationList = A00000000000000000000012; buildPhases = (A00000000000000000000016,A00000000000000000000017,A00000000000000000000018,); buildRules = (); dependencies = (A00000000000000000000022,); name = HuntUITests; productName = HuntUITests; productReference = A00000000000000000000015; productType = "com.apple.product-type.bundle.ui-testing";};
+  A00000000000000000000012 = {isa = XCConfigurationList; buildConfigurations = (A00000000000000000000013,A00000000000000000000014,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;};
+  A00000000000000000000013 = {isa = XCBuildConfiguration; buildSettings = {GENERATE_INFOPLIST_FILE = YES; PRODUCT_BUNDLE_IDENTIFIER = vn.hunt.app.uitests; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; TEST_TARGET_NAME = Hunt; CODE_SIGN_STYLE = Manual;}; name = Debug;};
+  A00000000000000000000014 = {isa = XCBuildConfiguration; buildSettings = {GENERATE_INFOPLIST_FILE = YES; PRODUCT_BUNDLE_IDENTIFIER = vn.hunt.app.uitests; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; TEST_TARGET_NAME = Hunt; CODE_SIGN_STYLE = Manual;}; name = Release;};
+  A00000000000000000000015 = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HuntUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR;};
+  A00000000000000000000016 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A00000000000000000000021,); runOnlyForDeploymentPostprocessing = 0;};
+  A00000000000000000000017 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0;};
+  A00000000000000000000018 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0;};
+  A00000000000000000000019 = {isa = PBXGroup; children = (A00000000000000000000020,); path = HuntUITests; sourceTree = "<group>";};
+  A00000000000000000000020 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HuntCaptureUITests.swift; sourceTree = "<group>";};
+  A00000000000000000000021 = {isa = PBXBuildFile; fileRef = A00000000000000000000020;};
+  A00000000000000000000022 = {isa = PBXTargetDependency; target = A00000000000000000000005; targetProxy = A00000000000000000000024;};
+  A00000000000000000000024 = {isa = PBXContainerItemProxy; containerPortal = A00000000000000000000001; proxyType = 1; remoteGlobalIDString = A00000000000000000000005; remoteInfo = Hunt;};
+ };
+ rootObject = A00000000000000000000001;
+}

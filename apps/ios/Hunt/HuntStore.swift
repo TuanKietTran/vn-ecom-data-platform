@@ -1,8 +1,11 @@
 import Foundation
 import Combine
 
-@MainActor final class ShopStore: ObservableObject {
+@MainActor final class HuntStore: ObservableObject {
     @Published var deals: DealResults?
+    @Published var upcomingDeals: UpcomingResults?
+    @Published var watchedUpcoming: [UpcomingDeal] = []
+    @Published var loadingUpcoming = false
     @Published var products: [Product] = []
     @Published var saved: [Deal] = []
     @Published var messages: [Message] = []
@@ -13,8 +16,21 @@ import Combine
     @Published var error: String?
     @Published var tab = 0
     private var chatTask: Task<Void, Never>?
-    var base: String { UserDefaults.standard.string(forKey: "gatewayURL") ?? "http://127.0.0.1:4100" }
-    init() { if let data = UserDefaults.standard.data(forKey: "savedDeals"), let items = try? JSONDecoder().decode([Deal].self, from: data) { saved = items } }
+    var base: String { UserDefaults.standard.string(forKey: "gatewayURL") ?? "http://127.0.0.1:3202" }
+    init() {
+        if let data = UserDefaults.standard.data(forKey: "savedDeals"), let items = try? JSONDecoder().decode([Deal].self, from: data) { saved = items }
+        if let data = UserDefaults.standard.data(forKey: "watchedUpcomingDeals"), let items = try? JSONDecoder().decode([UpcomingDeal].self, from: data) { watchedUpcoming = items }
+    }
+    func loadUpcoming(includeSynthetic: Bool = false) async {
+        loadingUpcoming = true; error = nil; defer { loadingUpcoming = false }
+        do { upcomingDeals = try await API(base: base).call("upcoming", query: [.init(name: "include_synthetic", value: String(includeSynthetic))]) }
+        catch { self.error = error.localizedDescription }
+    }
+    func toggleUpcoming(_ deal: UpcomingDeal) {
+        if let i = watchedUpcoming.firstIndex(where: { $0.id == deal.id }) { watchedUpcoming.remove(at: i) }
+        else { watchedUpcoming.insert(deal, at: 0); watchedUpcoming = Array(watchedUpcoming.prefix(100)) }
+        if let data = try? JSONEncoder().encode(watchedUpcoming) { UserDefaults.standard.set(data, forKey: "watchedUpcomingDeals") }
+    }
     func refreshStatus() async { do { status = try await API(base: base).call("status") } catch { status = nil; self.error = "Cannot reach the platform. Check Connection settings." } }
     func hunt(_ value: HuntRequest) async { hunting = true; error = nil; defer { hunting = false }; do { deals = try await API(base: base).call("deals", body: API.encode(value)) } catch { self.error = error.localizedDescription } }
     func discover(_ query: String, demo: Bool) async { discovering = true; error = nil; defer { discovering = false }; do { let result: ProductResults = try await API(base: base).call("products", query: [.init(name: "query", value: query), .init(name: "include_synthetic", value: String(demo))]); products = result.products } catch { self.error = error.localizedDescription } }
