@@ -363,6 +363,46 @@ def trino_ddl(bucket_prefix: str = "s3://vnecom-lake") -> None:
         )
 
 
+@app.command("publish-hf")
+def publish_hf(
+    repo_id: Annotated[str, typer.Argument(help="Hub dataset repo, e.g. username/dataset")],
+    yes: Annotated[bool, typer.Option("--yes", help="Confirm upload of public product data")] = False,
+    private: Annotated[
+        bool, typer.Option("--private/--public", help="Keep dataset private (default)")
+    ] = True,
+    dry_run: Annotated[
+        bool, typer.Option("--dry-run", help="Build dataset locally without network access")
+    ] = False,
+    output: Annotated[Path, typer.Option("--output", help="Local Parquet export directory")] = Path(
+        "hf_export"
+    ),
+) -> None:
+    """Publish allowlisted, redacted product-level gold data to Hugging Face."""
+    from vnecom.gold import dbt_env
+    from vnecom.publish_hf import publish
+
+    if not dry_run and (not yes or not os.environ.get("HF_TOKEN")):
+        raise typer.BadParameter("upload requires --yes and HF_TOKEN")
+    warehouse = dbt_env(get_settings())["VNECOM_WAREHOUSE"]
+    result = publish(
+        warehouse,
+        repo_id,
+        output_dir=output,
+        private=private,
+        dry_run=dry_run,
+        yes=yes,
+    )
+    if dry_run:
+        count, sources, size = result
+    else:
+        count, sources, size = result, {}, 0
+    typer.echo(f"{'would publish' if dry_run else 'published'} {count} product rows")
+    if dry_run:
+        typer.echo(f"Parquet: {size} bytes ({output / 'products.parquet'})")
+        for source, rows in sorted(sources.items()):
+            typer.echo(f"{source}: {rows} rows")
+
+
 @app.command()
 def query(sql: str) -> None:
     """Ad-hoc SQL against the gold warehouse (DuckDB)."""
