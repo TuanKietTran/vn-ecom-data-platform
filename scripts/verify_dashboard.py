@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Verify that the four charts on the Superset dashboard render in Chromium."""
+
 from __future__ import annotations
 
 import os
@@ -28,7 +29,9 @@ def main() -> int:
         page.on("pageerror", lambda error: failures.append(f"browser error: {error}"))
         response = page.goto(urljoin(BASE_URL + "/", "login/"), wait_until="domcontentloaded", timeout=60_000)
         if response is None or response.status >= 400:
-            raise RuntimeError(f"Superset login page unavailable: {response.status if response else 'no response'}")
+            raise RuntimeError(
+                f"Superset login page unavailable: {response.status if response else 'no response'}"
+            )
         if page.locator('input[name="username"]').count():
             page.locator('input[name="username"]').fill(USERNAME)
             page.locator('input[name="password"]').fill(PASSWORD)
@@ -38,7 +41,9 @@ def main() -> int:
         dashboard_url = urljoin(BASE_URL + "/", DASHBOARD_PATH.lstrip("/"))
         response = page.goto(dashboard_url, wait_until="domcontentloaded", timeout=60_000)
         if response is None or response.status >= 400:
-            raise RuntimeError(f"Dashboard unavailable at {dashboard_url}: {response.status if response else 'no response'}")
+            raise RuntimeError(
+                f"Dashboard unavailable at {dashboard_url}: {response.status if response else 'no response'}"
+            )
         page.locator("[data-test=dashboard], .dashboard").first.wait_for(timeout=60_000)
         chart_selector = '[data-test="chart-container"]'
         charts = page.locator(chart_selector)
