@@ -125,6 +125,7 @@ def build_snapshots(spark: SparkSession, settings: Settings, dt: date) -> dict[s
         .option("mode", "PERMISSIVE")
         .json(dirs)
         .withColumn("_bronze_file", F.col("_metadata.file_path"))
+        .withColumn("_bronze_committed_at", F.col("_metadata.file_modification_time"))
     )
 
     tiers = F.create_map(*[x for k, v in _source_tiers().items() for x in (F.lit(k), F.lit(v))])
@@ -161,6 +162,7 @@ def build_snapshots(spark: SparkSession, settings: Settings, dt: date) -> dict[s
             F.lit(dt).cast("date").alias("capture_date"),
             F.col("run_id"),
             F.col("_bronze_file"),
+            F.col("_bronze_committed_at"),
         )
         .withColumn("capture_hour", F.hour("captured_at_local"))
         .withColumn("source_tier", F.coalesce(tiers[F.col("_source_key")], F.lit("unknown")))
@@ -188,28 +190,74 @@ def build_snapshots(spark: SparkSession, settings: Settings, dt: date) -> dict[s
         .when(F.coalesce(F.length("title"), F.lit(0)) == 0, "empty_title")
     )
     df = df.withColumn("_dq_reason", reason).cache()
-    bad = df.where(F.col("_dq_reason").isNotNull())
-    good = df.where(F.col("_dq_reason").isNull()).drop("_dq_reason")
 
     # dedupe: one row per listing per capture hour per source; the latest observation wins, so
     # replays/backfills (new run_id, same data) and pagination overlaps collapse to one row
     key = ["platform", "source", "product_id", "sku_id", "capture_date", "capture_hour"]
-    w = Window.partitionBy(*key).orderBy(
-        F.col("captured_at").desc(), F.col("run_id").desc(), F.col("_bronze_file").desc()
+    keyed = df.withColumn(
+        "_key_fallback",
+        F.when(
+            F.col("product_id").isNull()
+            | (F.col("product_id") == "")
+            | F.col("platform").isNull()
+            | F.col("captured_at").isNull(),
+            F.monotonically_increasing_id(),
+        ).otherwise(F.lit(0)),
     )
-    clean = good.withColumn("_rn", F.row_number().over(w)).where("_rn = 1").drop("_rn")
+    w = Window.partitionBy(*key, "_key_fallback").orderBy(
+        F.col("captured_at").desc(),
+        F.col("_bronze_committed_at").desc(),
+        F.col("run_id").desc(),
+        F.col("_bronze_file").desc(),
+    )
+    selected = (
+        keyed.withColumn("_rn", F.row_number().over(w))
+        .where("_rn = 1")
+        .drop("_rn", "_key_fallback", "_bronze_committed_at")
+    )
+    bad = selected.where(F.col("_dq_reason").isNotNull())
+    clean = selected.where(F.col("_dq_reason").isNull()).drop("_dq_reason")
     clean = clean.withColumn("_silver_loaded_at", F.lit(datetime.now(UTC)).cast("timestamp"))
 
     n_in, n_bad, n_clean = df.count(), bad.count(), clean.count()
-    io.write_partitions(
-        clean, settings, "product_snapshots", partition_by=["capture_date", "platform"], dates=[dt]
-    )
     io.write_partitions(
         bad.withColumnRenamed("_dq_reason", "dq_reason"),
         settings,
         "product_snapshots_quarantine",
         partition_by=["capture_date"],
         dates=[dt],
+    )
+    from vnecom.pipeline import QualityGateError, quality_report
+
+    passed = n_clean > 0 and n_bad / max(n_clean + n_bad, 1) < 0.01
+    quality_report(
+        settings,
+        f"silver:{dt}",
+        passed=False,
+        state="quality_failed" if not passed else "write_pending",
+        capture_date=dt,
+        rows_in=n_in,
+        rows_clean=n_clean,
+        rows_quarantined=n_bad,
+        rows_deduped=n_in - n_bad - n_clean,
+    )
+    if not passed:
+        df.unpersist()
+        raise QualityGateError(
+            f"Silver {dt} failed quality checks; healthy snapshots and gold were preserved"
+        )
+    io.write_partitions(
+        clean, settings, "product_snapshots", partition_by=["capture_date", "platform"], dates=[dt]
+    )
+    quality_report(
+        settings,
+        f"silver:{dt}",
+        passed=True,
+        capture_date=dt,
+        rows_in=n_in,
+        rows_clean=n_clean,
+        rows_quarantined=n_bad,
+        rows_deduped=n_in - n_bad - n_clean,
     )
     df.unpersist()
     return {
@@ -238,8 +286,13 @@ def build_product_daily(spark: SparkSession, settings: Settings, dt: date) -> in
         .join(agg, key)
         .withColumnRenamed("price_vnd", "price_close_vnd")
     )
+    from vnecom.pipeline import quality_report
+
+    quality_report(settings, f"daily:{dt}", passed=False, capture_date=dt, state="write_pending")
     io.write_partitions(daily, settings, "product_daily", partition_by=["capture_date"], dates=[dt])
-    return daily.count()
+    count = daily.count()
+    quality_report(settings, f"daily:{dt}", passed=count > 0, capture_date=dt, rows=count)
+    return count
 
 
 def build_dim_product(spark: SparkSession, settings: Settings) -> int:
@@ -310,7 +363,7 @@ def record_dq(spark: SparkSession, settings: Settings, dt: date, stats: dict[str
         .count()
     )
     null_price = snaps.where(F.col("price_vnd").isNull()).count()
-    q_rate = stats["rows_quarantined"] / max(stats["rows_in"], 1)
+    q_rate = stats["rows_quarantined"] / max(stats["rows_clean"] + stats["rows_quarantined"], 1)
 
     checks = [
         ("rows_present", stats["rows_clean"] > 0, float(stats["rows_clean"]), 1.0),

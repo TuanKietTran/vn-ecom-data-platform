@@ -44,9 +44,9 @@ def test_chat_sends_gold_and_history_to_compatible_provider(warehouse):
         assert "123000" in body["messages"][0]["content"]
         assert "gold.mart_platform_daily" in body["messages"][0]["content"]
         assert body["messages"][1:] == [
-            {"role": "user", "content": "Compare platforms"},
+            {"role": "user", "content": "Compare GMV"},
             {"role": "assistant", "content": "Which day?"},
-            {"role": "user", "content": "Latest date"},
+            {"role": "user", "content": "Latest GMV"},
         ]
         return httpx.Response(
             200,
@@ -68,9 +68,9 @@ def test_chat_sends_gold_and_history_to_compatible_provider(warehouse):
             response = client.post(
                 "/chat",
                 json={
-                    "message": "Latest date",
+                    "message": "Latest GMV",
                     "history": [
-                        {"role": "user", "content": "Compare platforms"},
+                        {"role": "user", "content": "Compare GMV"},
                         {"role": "assistant", "content": "Which day?"},
                     ],
                 },
@@ -85,7 +85,7 @@ def test_unconfigured_chat_fails_explicitly_without_calling_provider(warehouse):
     with TestClient(create_app(AISettings(enabled=False), Settings())) as client:
         assert client.get("/health").status_code == 200
         assert client.get("/ready").status_code == 503
-        assert client.post("/chat", json={"message": "Hello"}).status_code == 503
+        assert client.post("/chat", json={"message": "GMV"}).status_code == 503
 
 
 def test_data_mode_works_without_a_model(warehouse):
@@ -138,7 +138,7 @@ def test_provider_errors_do_not_expose_provider_response(warehouse, response):
         httpx.Client(transport=httpx.MockTransport(lambda _: response)) as upstream,
         TestClient(create_app(config(), Settings(), upstream)) as client,
     ):
-        result = client.post("/chat", json={"message": "Hello"})
+        result = client.post("/chat", json={"message": "GMV"})
         assert result.status_code == 502
         assert "provider-private-error" not in result.text
         assert "unit-test-key" not in result.text

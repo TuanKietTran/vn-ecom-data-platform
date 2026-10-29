@@ -300,6 +300,10 @@ class SyntheticConnector(Connector):
     def __init__(self, settings: Settings, platform: Platform) -> None:
         super().__init__(settings)
         self.platform = platform  # type: ignore[misc]
+        # Tiny shared-SKU samples may intentionally contain no books/beauty products.
+        self.allows_empty_capture = not _catalog(
+            platform.value, settings.synthetic_products_per_platform, settings.synthetic_seed
+        )
 
     def fetch(self, capture_date: date, run_id: str) -> Iterator[ProductSnapshot]:
         products = _catalog(

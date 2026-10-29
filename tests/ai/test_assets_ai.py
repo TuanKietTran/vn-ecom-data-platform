@@ -21,4 +21,3 @@ def test_dagster_definitions_load_without_ai_extra():
         env={**os.environ, "PYTHONPATH": "orchestration/dagster"},
     )
     assert result.returncode == 0, result.stderr
-

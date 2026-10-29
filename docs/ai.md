@@ -1,6 +1,6 @@
 # AI layer (ShopLens)
 
-The AI package is an optional layer in `src/vnecom/ai`. ShopLens provides a browser chat and HTTP API using an OpenAI-compatible chat-completions adapter. Chat receives recent daily gold platform metrics as context. Product-level retrieval, matching, evaluation, and gRPC remain separate work.
+The AI package is an optional layer in `src/vnecom/ai`. ShopLens provides browser chat, fixed analytics, lexical product retrieval, structured Deal hunt and an OpenAI-compatible adapter. See [Deal hunting and pipeline coverage](deal-hunting.md) for voucher arithmetic, historical ingestion, quality gates, reconciliation, indexing and offline evaluation. Semantic product retrieval, cross-platform matching, live-model evaluation and gRPC remain separate work.
 
 ## Run platform chat
 
@@ -22,6 +22,8 @@ Configure these variables in the process environment (the AI settings do not rea
 | `VNECOM_AI_BASE_URL` | OpenAI-compatible base URL ending in `/v1`; defaults to `https://api.openai.com/v1` |
 | `VNECOM_AI_MODEL` | Exact model ID advertised by the provider; defaults to `gpt-4o-mini` |
 | `VNECOM_AI_API_KEY` | Provider credential, supplied securely through environment settings |
+| `VNECOM_AI_API_KEY_REQUIRED=false` | Explicitly allow a keyless local runtime; defaults to true |
+| `VNECOM_AI_MAX_CONTEXT_CHARS` | Maximum combined system/history/question characters; defaults to 60,000 |
 
 Gemma and GPT-OSS can be used when their serving runtime exposes the same chat-completions protocol. Their names and availability depend on the runtime; no weights or local model server are installed by the AI extra. Local model selection and serving can be added later without changing the chat UI.
 
@@ -31,13 +33,13 @@ Gemma and GPT-OSS can be used when their serving runtime exposes the same chat-c
 
 The root page serves a Codex-style chat interface with a conversation sidebar, fixed composer, suggested questions, Enter-to-send and Shift+Enter for new lines. Conversations are saved in this browser's local storage; they can be deleted from the header. No server-side conversation storage is provided.
 
-The interface defaults to **Platform data** mode, which works without a model or API key. `POST /chat/data` returns deterministic latest-date reports for estimated GMV, average prices, or listing counts. These reports use the actual gold metrics but do not interpret arbitrary questions and are explicitly labeled as using no LLM. `GET /chat/status` reports gold-data availability separately from model configuration. An unconfigured model is disabled in the mode picker instead of failing every message.
+The interface defaults to **Platform data** mode, which works without a model or API key. `POST /chat/data` routes supported analytics to fixed queries, product questions to the index, and voucher questions to Deal hunt. Latest-date or explicitly requested-date reports use actual gold metrics but do not interpret arbitrary questions and are explicitly labeled as using no LLM. `GET /chat/status` reports gold-data availability separately from model configuration. An unconfigured model is disabled in the mode picker instead of failing every message.
 
-`GET /health` checks the API process. `GET /ready` checks model configuration and readable gold metrics; it does not call or verify the model provider. In **Model** mode, `POST /chat` accepts `{"message":"Compare platform GMV on the latest date", "history":[]}` and returns `answer`, `model`, and `context_source`. History permits only user/assistant turns, with at most 20 messages and 8,000 characters per message. Sending can be stopped in the browser; this cancels waiting for the response but may not stop an upstream provider request already in progress.
+`GET /health` checks the API process. `GET /ready` checks model configuration and readable gold metrics; it does not call or verify the model provider. In **Model** mode, `POST /chat` accepts `{"message":"Compare platform GMV on the latest date", "history":[]}` and returns `answer`, `model`, and `context_source`. History permits only user/assistant turns, with at most 20 messages and 8,000 characters per message. Product/deal/unsupported intents use deterministic routing instead of letting the model invent listing details. Date-specific analytics use that date's evidence. Sending can be stopped in the browser; this cancels waiting for the response but may not stop an upstream provider request already in progress.
 
-Every answer receives a fixed read-only query from `gold.mart_platform_daily`, limited to 14 recent dates and 200 rows. Chat executes no model-generated SQL and sends that context and conversation history to the configured model endpoint. The system prompt requests source/date citations, distinguishes unknown values from zero, and identifies synthetic demo data. Citations and accuracy still require review; this is aggregate context, not product-level retrieval or verified market-wide coverage.
+Analytics use a fixed read-only query from `gold.mart_platform_source_daily` (legacy `gold.mart_platform_daily` before rebuilding), limited to 14 recent dates or one explicitly requested date and 200 rows. The source-separated mart avoids blending synthetic and live metrics and selects the first configured non-synthetic source by default. Chat executes no model-generated SQL and sends only the analytics context and conversation history to the configured model endpoint. Product candidates come from the local index, not aggregate metrics. The system prompt requests source/date citations and distinguishes unknown values from zero. Model accuracy still requires review; tracked listings are not verified market-wide coverage.
 
-Missing configuration/data returns 503, provider errors return 502, and provider timeouts return 504. Keep the development service bound to loopback: authentication and multi-user persistence are not implemented.
+Missing configuration/data returns 503, provider errors return 502, provider timeouts return 504, and an oversized model context returns 413 before calling a provider. Keep the development service bound to loopback: authentication and multi-user persistence are not implemented. `vnecom ai probe` checks a real configured provider with a small greeting request and no platform data.
 
 Run `.venv/bin/python -m pytest -q tests/ai/test_chat_api.py` for API/provider-contract tests. These use a mocked compatible endpoint and require no model or API key; they do not establish live model availability.
 

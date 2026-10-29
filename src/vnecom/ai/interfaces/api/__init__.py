@@ -8,11 +8,14 @@ import duckdb
 import httpx
 from pydantic import BaseModel, Field, StringConstraints
 
-from vnecom.ai.application.chat import SYSTEM_PROMPT, data_answer, gold_context
+from vnecom.ai.application.assistant import answer_question
+from vnecom.ai.application.chat import SYSTEM_PROMPT, gold_context
+from vnecom.ai.application.routing import contextual_question, intent, requested_day
 from vnecom.ai.application.use_cases import GenerateText
 from vnecom.ai.config import AISettings, get_ai_settings
 from vnecom.ai.domain.entities import GenerationRequest
-from vnecom.ai.infrastructure.openai_compatible import OpenAICompatibleModel
+from vnecom.ai.infrastructure.openai_compatible import ContextLimitError, OpenAICompatibleModel
+from vnecom.deals import DealSearch, hunt
 from vnecom.settings import Settings, get_settings
 
 MessageText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=8000)]
@@ -48,7 +51,7 @@ def create_app(
     platform = platform_settings or get_settings()
 
     def context() -> str:
-        if not config.enabled or not config.api_key_value:
+        if not config.model_configured:
             raise HTTPException(
                 503, "Set VNECOM_AI_ENABLED=true and configure VNECOM_AI_API_KEY in environment settings"
             )
@@ -78,23 +81,69 @@ def create_app(
             available = False
         return {
             "data_available": available,
-            "model_configured": config.enabled and bool(config.api_key_value),
+            "model_configured": config.model_configured,
             "model": config.model,
             "source": "gold.mart_platform_daily",
             "sources": platform.sources,
+            "deals_available": True,
+        }
+
+    @app.post("/deals/search")
+    def deals(request: DealSearch) -> dict[str, Any]:
+        from vnecom.deal_catalog import attach_history, read_catalog
+
+        try:
+            catalog = read_catalog(platform)
+            result = hunt(catalog, request)
+            attach_history(platform, result)
+        except (OSError, ValueError) as exc:
+            raise HTTPException(
+                503, "Deal evidence is unavailable or invalid; refresh the validated catalog"
+            ) from exc
+        return {
+            **{name: [deal.model_dump(mode="json") for deal in values] for name, values in result.items()},
+            "catalog_offer_count": len(catalog.offers),
+            "notice": "Estimated checkout only. Confirm vouchers, eligibility, delivery and variant at checkout. "
+            "Cashback is separate from the amount payable today.",
         }
 
     @app.post("/chat/data")
-    def report(request: ChatRequest) -> dict[str, str]:
+    def report(request: ChatRequest) -> dict[str, Any]:
+        try:
+            return answer_question(
+                platform, request.message, [(turn.role, turn.content) for turn in request.history]
+            )
+        except (duckdb.Error, OSError, ValueError) as exc:
+            raise HTTPException(
+                503, "Requested evidence is unavailable; refresh the corresponding pipeline"
+            ) from exc
+
+    @app.get("/products/search")
+    def products(query: str, include_synthetic: bool = False) -> dict[str, Any]:
+        from vnecom.product_index import ProductIndex
+
+        if not 2 <= len(query) <= 300:
+            raise HTTPException(422, "Product query must be between 2 and 300 characters")
         return {
-            "answer": data_answer(request.message, data_context()),
-            "model": "Platform data (no LLM)",
-            "context_source": "gold.mart_platform_daily",
+            "products": ProductIndex().search(query, include_synthetic=include_synthetic),
+            "notice": "Candidate listings only. Confirm exact variant, warranty and checkout costs.",
         }
 
     @app.post("/chat")
     def chat(request: ChatRequest) -> dict[str, Any]:
         evidence = context()
+        question = contextual_question(
+            request.message, [(turn.role, turn.content) for turn in request.history]
+        )
+        route = intent(question)
+        if route in {"deal", "product", "unsupported"}:
+            return answer_question(platform, question)
+        day = requested_day(question)
+        if day:
+            try:
+                evidence = gold_context(platform, day)
+            except ValueError:
+                return answer_question(platform, question)
         prompt = SYSTEM_PROMPT
         if config.system_prompt:
             prompt += "\n" + config.system_prompt
@@ -109,6 +158,10 @@ def create_app(
                         max_tokens=1500,
                     )
                 )
+        except ContextLimitError as exc:
+            raise HTTPException(
+                413, "Conversation is too long for the model context budget; start a new conversation"
+            ) from exc
         except httpx.TimeoutException as exc:
             raise HTTPException(504, "The model provider timed out; try again") from exc
         except (httpx.HTTPError, RuntimeError, ValueError, KeyError, IndexError, TypeError) as exc:

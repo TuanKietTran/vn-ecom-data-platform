@@ -42,7 +42,8 @@ class PgVectorStore:
             await cursor.executemany(
                 f"INSERT INTO {self.table} (document_id,text,content_hash,metadata,embedding) VALUES (%s,%s,%s,%s,%s) "
                 "ON CONFLICT (document_id) DO UPDATE SET text=EXCLUDED.text, content_hash=EXCLUDED.content_hash, "
-                "metadata=EXCLUDED.metadata, embedding=EXCLUDED.embedding", rows,
+                "metadata=EXCLUDED.metadata, embedding=EXCLUDED.embedding",
+                rows,
             )
 
     async def search(self, embedding: Sequence[float], *, limit: int = 10) -> list[dict[str, Any]]:
@@ -56,7 +57,8 @@ class PgVectorStore:
         async with self.pool.connection() as conn:
             cursor = await conn.execute(
                 f"SELECT document_id,text,content_hash,metadata,1-(embedding <=> %s) AS score FROM {self.table} "
-                "ORDER BY embedding <=> %s LIMIT %s", (query_vector, query_vector, limit),
+                "ORDER BY embedding <=> %s LIMIT %s",
+                (query_vector, query_vector, limit),
             )
             rows = await cursor.fetchall()
             if not rows or isinstance(rows[0], Mapping):

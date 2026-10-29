@@ -18,9 +18,9 @@ def _settings(*, table_format="parquet", lake_uri="/tmp/lake", endpoint=None):
         aws_secret_access_key=SimpleNamespace(get_secret_value=lambda: "secret"),
         aws_endpoint_url=endpoint,
         is_remote_lake=lake_uri.startswith(("s3://", "s3a://")),
-        lake_path=lambda *parts, **kwargs: "/".join([
-            lake_uri.replace("s3a://", "s3://", 1).rstrip("/"), *parts
-        ]),
+        lake_path=lambda *parts, **kwargs: "/".join(
+            [lake_uri.replace("s3a://", "s3://", 1).rstrip("/"), *parts]
+        ),
     )
 
 
@@ -122,14 +122,21 @@ def test_trino_uses_configured_coordinator_and_catalog(monkeypatch):
     monkeypatch.setitem(sys.modules, "trino", trino)
     monkeypatch.setitem(sys.modules, "trino.dbapi", trino.dbapi)
     config = AISettings(
-        lake_backend="trino", trino_url="https://trino.example:8443", trino_user="reader",
-        trino_catalog="hive", trino_schema="silver",
+        lake_backend="trino",
+        trino_url="https://trino.example:8443",
+        trino_user="reader",
+        trino_catalog="hive",
+        trino_schema="silver",
     )
     reader = LakeReader(_settings(), ai_settings=config)
     assert reader.read_rows("product_daily", limit=2) == [{"product_id": "p1", "title": "Title"}]
     assert calls[0] == {
-        "host": "trino.example", "port": 8443, "user": "reader", "http_scheme": "https",
-        "catalog": "hive", "schema": "silver",
+        "host": "trino.example",
+        "port": 8443,
+        "user": "reader",
+        "http_scheme": "https",
+        "catalog": "hive",
+        "schema": "silver",
     }
     assert calls[1] == 'SELECT * FROM "hive"."silver"."product_daily" LIMIT 2'
     assert calls[-1] == "closed"
@@ -143,14 +150,26 @@ def test_document_pipeline_joins_current_dim_product_to_recent_daily_prices(monk
         calls.append((table, limit, min_capture_date))
         if table == "dim_product":
             return [
-                {"platform": "tiki", "product_id": "p1", "title": "Kettle", "category_id": "home",
-                 "seller_id": "seller", "is_current": True},
+                {
+                    "platform": "tiki",
+                    "product_id": "p1",
+                    "title": "Kettle",
+                    "category_id": "home",
+                    "seller_id": "seller",
+                    "is_current": True,
+                },
                 {"platform": "tiki", "product_id": "p-old", "title": "Old", "is_current": False},
             ]
-        return [{
-            "platform": "tiki", "product_id": "p1", "capture_date": "2025-02-01",
-            "price_close_vnd": 200_000, "price_min_vnd": 180_000, "price_max_vnd": 220_000,
-        }]
+        return [
+            {
+                "platform": "tiki",
+                "product_id": "p1",
+                "capture_date": "2025-02-01",
+                "price_close_vnd": 200_000,
+                "price_min_vnd": 180_000,
+                "price_max_vnd": 220_000,
+            }
+        ]
 
     monkeypatch.setattr(reader, "read_rows", read_rows)
     docs = reader.read_product_documents(as_of=date(2025, 2, 1))

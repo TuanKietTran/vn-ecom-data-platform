@@ -43,6 +43,9 @@ class GoldTranslator(DagsterDbtTranslator):
 
 @dbt_assets(manifest=dbt_project.manifest_path, project=dbt_project, dagster_dbt_translator=GoldTranslator())
 def gold_dbt(context: dg.AssetExecutionContext, dbt: DbtCliResource):
+    from vnecom.pipeline import assert_publishable
+
+    assert_publishable(get_settings())
     yield from dbt.cli(["build"], context=context).stream()
 
 

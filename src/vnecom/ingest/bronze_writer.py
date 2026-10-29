@@ -53,13 +53,18 @@ def write_bronze(
     source: str,
     dt: date,
     run_id: str,
+    capture_complete=None,
+    allow_empty: bool = False,
 ) -> BronzeWriteResult:
     base = bronze_dir(settings, platform, dt, source, run_id)
     fs, _, _ = fsspec.get_fs_token_paths(base, storage_options=settings.storage_options())
+    if fs.exists(f"{base}/_SUCCESS") or fs.glob(f"{base}/part-*.jsonl.gz"):
+        raise FileExistsError("Bronze runs are immutable; retry with a new run ID")
     fs.makedirs(base, exist_ok=True)
 
     files: list[str] = []
     total = 0
+    products: set[tuple[str, str, str]] = set()
     buf: list[str] = []
 
     def flush() -> None:
@@ -78,9 +83,25 @@ def write_bronze(
         rec.run_id = run_id
         buf.append(json.dumps(rec.to_bronze(), ensure_ascii=False))
         total += 1
+        products.add((rec.platform.value, rec.product_id, rec.sku_id or ""))
         if len(buf) >= ROWS_PER_PART:
             flush()
     flush()
+
+    from vnecom.pipeline import accept_capture
+
+    accept_capture(
+        settings,
+        platform=platform,
+        source=source,
+        dt=dt,
+        run_id=run_id,
+        rows=total,
+        unique_products=len(products),
+        base=base,
+        complete=capture_complete() if capture_complete else True,
+        allow_empty=allow_empty,
+    )
 
     # _SUCCESS marker lets sensors/silver ignore half-written runs
     with fs.open(f"{base}/_SUCCESS", "w") as f:

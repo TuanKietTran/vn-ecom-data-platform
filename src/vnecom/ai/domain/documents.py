@@ -26,7 +26,9 @@ def content_hash(value: Any) -> str:
 
 
 def build_product_document(
-    row: Mapping[str, Any], *, price_history: Iterable[Mapping[str, Any]] | None = None,
+    row: Mapping[str, Any],
+    *,
+    price_history: Iterable[Mapping[str, Any]] | None = None,
     as_of: date | datetime | str | None = None,
 ) -> LakeDocument:
     """Build a retrieval document from one silver ``dim_product`` row.
@@ -47,23 +49,33 @@ def build_product_document(
         raise ValueError("product_id is required to build a lake document")
 
     history = list(price_history if price_history is not None else (row.get("price_history") or ()))
-    price_summary = _price_summary_30d(history, as_of=as_of) if history else {
-        key: _valid_price(row.get(key))
-        for key in (
-            "price_30d_min_vnd", "price_30d_max_vnd", "price_30d_latest_vnd",
-            "price_30d_mean_vnd", "price_30d_observation_days",
-        )
-        if _valid_price(row.get(key)) is not None
-    }
+    price_summary = (
+        _price_summary_30d(history, as_of=as_of)
+        if history
+        else {
+            key: _valid_price(row.get(key))
+            for key in (
+                "price_30d_min_vnd",
+                "price_30d_max_vnd",
+                "price_30d_latest_vnd",
+                "price_30d_mean_vnd",
+                "price_30d_observation_days",
+            )
+            if _valid_price(row.get(key)) is not None
+        }
+    )
     if history:
         price_summary = {key: value for key, value in price_summary.items() if value is not None}
 
     category = row.get("category_path") or row.get("category_id")
     seller = row.get("seller_name") or row.get("seller_id")
     fields = [
-        ("title", row.get("title")), ("brand", row.get("brand")),
-        ("category", category), ("category_id", row.get("category_id") if category != row.get("category_id") else None),
-        ("seller", seller), ("seller_id", row.get("seller_id") if seller != row.get("seller_id") else None),
+        ("title", row.get("title")),
+        ("brand", row.get("brand")),
+        ("category", category),
+        ("category_id", row.get("category_id") if category != row.get("category_id") else None),
+        ("seller", seller),
+        ("seller_id", row.get("seller_id") if seller != row.get("seller_id") else None),
         ("official_store", row.get("is_official_store")),
         ("price_vnd", row.get("price_close_vnd", row.get("price_vnd"))),
         ("description", row.get("description")),
@@ -73,10 +85,21 @@ def build_product_document(
     parts.extend(f"{key}: {value}" for key, value in sorted(price_summary.items()))
     text = "\n".join(parts)
     metadata = {
-        key: str(row[key]) for key in (
-            "platform", "product_id", "sku_id", "capture_date", "product_sk", "valid_from", "valid_to",
-            "is_current", "url", "category_id", "seller_id",
-        ) if row.get(key) is not None
+        key: str(row[key])
+        for key in (
+            "platform",
+            "product_id",
+            "sku_id",
+            "capture_date",
+            "product_sk",
+            "valid_from",
+            "valid_to",
+            "is_current",
+            "url",
+            "category_id",
+            "seller_id",
+        )
+        if row.get(key) is not None
     }
     metadata.update({key: str(value) for key, value in price_summary.items()})
     identity = f"{platform}:{product_id}:{sku_id}"
@@ -116,7 +139,9 @@ def _as_date(value: Any) -> date | None:
 
 
 def _price_summary_30d(
-    rows: Iterable[Mapping[str, Any]], *, as_of: date | datetime | str | None,
+    rows: Iterable[Mapping[str, Any]],
+    *,
+    as_of: date | datetime | str | None,
 ) -> dict[str, int]:
     dated_rows = [(day, row) for row in rows if (day := _as_date(row.get("capture_date"))) is not None]
     if not dated_rows:
@@ -129,7 +154,8 @@ def _price_summary_30d(
     per_day: dict[date, list[int]] = {}
     for day, row in valid:
         prices = [
-            price for field in ("price_min_vnd", "price_close_vnd", "price_vnd", "price_max_vnd")
+            price
+            for field in ("price_min_vnd", "price_close_vnd", "price_vnd", "price_max_vnd")
             if (price := _valid_price(row.get(field))) is not None
         ]
         if prices:
@@ -137,12 +163,15 @@ def _price_summary_30d(
     if not per_day:
         return {}
     daily_closes = [
-        price for day, row in valid
+        price
+        for day, row in valid
         if day in per_day
         if (price := _valid_price(row.get("price_close_vnd", row.get("price_vnd")))) is not None
     ]
     latest_day = max(per_day)
-    latest_row = max((row for day, row in valid if day == latest_day), key=lambda r: str(r.get("captured_at", "")))
+    latest_row = max(
+        (row for day, row in valid if day == latest_day), key=lambda r: str(r.get("captured_at", ""))
+    )
     latest_price = _valid_price(latest_row.get("price_close_vnd", latest_row.get("price_vnd")))
     summary = {
         "price_30d_min_vnd": min(min(prices) for prices in per_day.values()),
@@ -157,8 +186,17 @@ def _price_summary_30d(
 
 
 def build_scd2_history(
-    rows: list[dict[str, Any]], *, key_fields: tuple[str, ...] = ("platform", "product_id", "sku_id"),
-    attribute_fields: tuple[str, ...] = ("title", "brand", "category_path", "seller_id", "seller_name", "url"),
+    rows: list[dict[str, Any]],
+    *,
+    key_fields: tuple[str, ...] = ("platform", "product_id", "sku_id"),
+    attribute_fields: tuple[str, ...] = (
+        "title",
+        "brand",
+        "category_path",
+        "seller_id",
+        "seller_name",
+        "url",
+    ),
     effective_field: str = "capture_date",
 ) -> list[dict[str, Any]]:
     """Derive a deterministic SCD2 history from dated lake rows (end date exclusive)."""
@@ -186,9 +224,14 @@ def build_scd2_history(
             versions.append((str(effective), attrs, digest))
         for index, (start, attrs, digest) in enumerate(versions):
             end = versions[index + 1][0] if index + 1 < len(versions) else None
-            result.append({
-                **dict(zip(key_fields, key, strict=True)), **attrs,
-                "attribute_hash": digest, "valid_from": start, "valid_to": end,
-                "is_current": end is None,
-            })
+            result.append(
+                {
+                    **dict(zip(key_fields, key, strict=True)),
+                    **attrs,
+                    "attribute_hash": digest,
+                    "valid_from": start,
+                    "valid_to": end,
+                    "is_current": end is None,
+                }
+            )
     return result

@@ -43,7 +43,10 @@ class LakeReader:
             raise ValueError("spark backend requires a SparkSession")
 
     def read_rows(
-        self, table: str = "product_daily", *, limit: int | None = None,
+        self,
+        table: str = "product_daily",
+        *,
+        limit: int | None = None,
         min_capture_date: date | str | None = None,
     ) -> list[dict[str, Any]]:
         if table not in _SUPPORTED_TABLES:
@@ -53,7 +56,11 @@ class LakeReader:
         if min_capture_date is not None:
             if table != "product_daily":
                 raise ValueError("min_capture_date is supported only for product_daily")
-            min_capture_date = date.fromisoformat(min_capture_date) if isinstance(min_capture_date, str) else min_capture_date
+            min_capture_date = (
+                date.fromisoformat(min_capture_date)
+                if isinstance(min_capture_date, str)
+                else min_capture_date
+            )
         if self._backend == "duckdb":
             return self._read_duckdb(table, limit, min_capture_date)
         if self._backend == "trino":
@@ -61,7 +68,10 @@ class LakeReader:
         return self._read_spark(table, limit, min_capture_date)
 
     def read_product_documents(
-        self, *, as_of: date | None = None, limit: int | None = None,
+        self,
+        *,
+        as_of: date | None = None,
+        limit: int | None = None,
     ) -> list[LakeDocument]:
         """Build documents from current dim_product rows and their preceding 30 days of prices."""
         from vnecom.ai.domain.documents import build_product_document
@@ -82,14 +92,19 @@ class LakeReader:
         return [
             build_product_document(
                 row,
-                price_history=histories.get((str(row.get("platform") or "unknown"), str(row.get("product_id") or "")), ()),
+                price_history=histories.get(
+                    (str(row.get("platform") or "unknown"), str(row.get("product_id") or "")), ()
+                ),
                 as_of=end,
             )
             for row in dimensions
         ]
 
     def _read_duckdb(
-        self, table: str, limit: int | None, min_capture_date: date | None,
+        self,
+        table: str,
+        limit: int | None,
+        min_capture_date: date | None,
     ) -> list[dict[str, Any]]:
         if self._settings.vnecom_table_format != "parquet":
             raise ValueError("DuckDB lake reader requires VNECOM_TABLE_FORMAT=parquet")
@@ -119,19 +134,24 @@ class LakeReader:
             "s3_region": settings.aws_region,
             "s3_access_key_id": settings.aws_access_key_id or "",
             "s3_secret_access_key": settings.aws_secret_access_key.get_secret_value()
-            if settings.aws_secret_access_key else "",
+            if settings.aws_secret_access_key
+            else "",
         }
         if settings.aws_endpoint_url:
             endpoint = settings.aws_endpoint_url.removeprefix("https://").removeprefix("http://")
-            options.update({
-                "s3_endpoint": endpoint,
-                "s3_url_style": "path",
-                "s3_use_ssl": str(settings.aws_endpoint_url.startswith("https://")).lower(),
-            })
+            options.update(
+                {
+                    "s3_endpoint": endpoint,
+                    "s3_url_style": "path",
+                    "s3_use_ssl": str(settings.aws_endpoint_url.startswith("https://")).lower(),
+                }
+            )
         for key, value in options.items():
             connection.execute(f"SET {key}={_sql_string(value)}")
 
-    def _read_trino(self, table: str, limit: int | None, min_capture_date: date | None) -> list[dict[str, Any]]:
+    def _read_trino(
+        self, table: str, limit: int | None, min_capture_date: date | None
+    ) -> list[dict[str, Any]]:
         import trino.dbapi
 
         parsed = urlparse(self._ai_settings.trino_url)
@@ -160,7 +180,9 @@ class LakeReader:
         finally:
             connection.close()
 
-    def _read_spark(self, table: str, limit: int | None, min_capture_date: date | None) -> list[dict[str, Any]]:
+    def _read_spark(
+        self, table: str, limit: int | None, min_capture_date: date | None
+    ) -> list[dict[str, Any]]:
         from vnecom.spark.io import read_table, table_exists
 
         if self._spark is None:

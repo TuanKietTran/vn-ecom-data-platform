@@ -4,10 +4,19 @@ import dagster as dg
 
 from vnecom_dagster.assets_dbt import dbt_resource, gold_dbt
 from vnecom_dagster.assets_lake import bronze_product_snapshots, silver_daily, silver_dims
+from vnecom_dagster.assets_ops import deal_catalog_check, pipeline_reconciliation, product_search_index
 from vnecom_dagster.resources import VnecomResource
 from vnecom_dagster.schedules import campaign_capture, capture_job, regular_capture
 
-assets = [bronze_product_snapshots, silver_daily, silver_dims, gold_dbt]
+assets = [
+    bronze_product_snapshots,
+    silver_daily,
+    silver_dims,
+    gold_dbt,
+    pipeline_reconciliation,
+    product_search_index,
+    deal_catalog_check,
+]
 asset_checks = []
 if find_spec("langgraph") is not None:
     from vnecom_dagster.assets_ai import embedding_coverage, embedding_freshness, product_embeddings

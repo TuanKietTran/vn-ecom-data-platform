@@ -2,7 +2,7 @@
 
 from functools import lru_cache
 
-from pydantic import SecretStr
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -13,8 +13,10 @@ class AISettings(BaseSettings):
     provider: str = "openai-compatible"
     base_url: str = "https://api.openai.com/v1"
     api_key: SecretStr | None = None
+    api_key_required: bool = True
     model: str = "gpt-4o-mini"
-    timeout_s: float = 60.0
+    timeout_s: float = Field(default=60.0, gt=0)
+    max_context_chars: int = Field(default=60_000, gt=0)
     system_prompt: str | None = None
 
     lake_backend: str = "duckdb"
@@ -40,6 +42,10 @@ class AISettings(BaseSettings):
     @property
     def api_key_value(self) -> str | None:
         return self.api_key.get_secret_value() if self.api_key else None
+
+    @property
+    def model_configured(self) -> bool:
+        return self.enabled and (bool(self.api_key_value) or not self.api_key_required)
 
 
 @lru_cache

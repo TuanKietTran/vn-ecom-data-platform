@@ -18,19 +18,33 @@ class Reader(LakeReader):
         self.calls: list[tuple[str, date | None]] = []
 
     def read_rows(
-        self, table: str = "product_daily", *, limit: int | None = None,
+        self,
+        table: str = "product_daily",
+        *,
+        limit: int | None = None,
         min_capture_date: date | str | None = None,
     ) -> list[dict[str, Any]]:
         self.calls.append((table, min_capture_date if isinstance(min_capture_date, date) else None))
         if table == "dim_product":
-            return [{
-                "platform": "shop", "product_id": "sku-1", "title": "Phone", "brand": "Acme",
-                "category_path": "Electronics > Phones", "seller_name": "Seller", "is_current": True,
-            }]
-        return [{
-            "platform": "shop", "product_id": "sku-1", "capture_date": date.today().isoformat(),
-            "price_close_vnd": 42,
-        }]
+            return [
+                {
+                    "platform": "shop",
+                    "product_id": "sku-1",
+                    "title": "Phone",
+                    "brand": "Acme",
+                    "category_path": "Electronics > Phones",
+                    "seller_name": "Seller",
+                    "is_current": True,
+                }
+            ]
+        return [
+            {
+                "platform": "shop",
+                "product_id": "sku-1",
+                "capture_date": date.today().isoformat(),
+                "price_close_vnd": 42,
+            }
+        ]
 
 
 class CaptureStore:
@@ -61,11 +75,15 @@ async def test_factory_uses_dim_product_builder_and_30_day_price_join(
     config = AISettings(embedding_provider="fake", embedding_dimensions=16, vector_store="memory")
     store = CaptureStore()
     result = await embedding_factory.run_embedding_job(
-        Settings(vnecom_table_format="parquet"), config, embedder=Embedder(), store=store,
+        Settings(vnecom_table_format="parquet"),
+        config,
+        embedder=Embedder(),
+        store=store,
     )
     assert result == {"processed": 1, "failed": 0, "indexed": 1}
     assert instances[0].calls == [
-        ("dim_product", None), ("product_daily", date.today() - timedelta(days=29)),
+        ("dim_product", None),
+        ("product_daily", date.today() - timedelta(days=29)),
     ]
     assert "title: Phone" in store.documents[0].text
     assert "category: Electronics > Phones" in store.documents[0].text
@@ -96,7 +114,9 @@ def test_environment_configuration_names(monkeypatch: pytest.MonkeyPatch) -> Non
     ],
 )
 def test_dynamodb_factory_passes_optional_endpoint_url(
-    monkeypatch: pytest.MonkeyPatch, endpoint_url: str | None, expected_kwargs: dict[str, object],
+    monkeypatch: pytest.MonkeyPatch,
+    endpoint_url: str | None,
+    expected_kwargs: dict[str, object],
 ) -> None:
     monkeypatch.setattr(embedding_factory, "LakeReader", Reader)
     calls: list[tuple[str, dict[str, object]]] = []
@@ -112,7 +132,9 @@ def test_dynamodb_factory_passes_optional_endpoint_url(
 
     monkeypatch.setitem(sys.modules, "boto3", SimpleNamespace(resource=resource))
     config = AISettings(
-        vector_store="dynamodb", dynamodb_table="vectors", dynamodb_region="us-west-2",
+        vector_store="dynamodb",
+        dynamodb_table="vectors",
+        dynamodb_region="us-west-2",
         dynamodb_endpoint_url=endpoint_url,
     )
     embedding_factory.build_embedding_components(Settings(), config, embedder=object())

@@ -140,7 +140,7 @@ in `src/vnecom/ingest/registry.py`, add it to `config/platforms.yaml`.
 
 ## AI layer (ShopLens)
 
-The optional AI layer adds OpenAI-compatible browser/API chat over recent gold platform metrics without importing AI frameworks into the core CLI. Install `.[lite,ai]`, configure `VNECOM_AI_ENABLED`, `VNECOM_AI_API_KEY`, and optionally `VNECOM_AI_BASE_URL` / `VNECOM_AI_MODEL`, then run `.venv/bin/vnecom ai serve`. Gemma or GPT-OSS can use a compatible serving endpoint; model weights and local serving are configured separately. See [`docs/ai.md`](docs/ai.md) for setup, limitations, and tests. Product-level retrieval, matching, gRPC, and evaluation remain unfinished.
+The optional AI layer adds browser/API chat, indexed product search, and **Deal hunt** for specific products with voucher combinations. Data reports and checkout arithmetic work without a language model. Run `.venv/bin/vnecom deals-demo` for explicitly synthetic deal examples, then `.venv/bin/vnecom ai serve`. Install `.[lite,ai]` and configure `VNECOM_AI_ENABLED`, `VNECOM_AI_API_KEY`, and optionally `VNECOM_AI_BASE_URL` / `VNECOM_AI_MODEL` to enable compatible model explanations. Gemma/GPT-OSS weights and serving are configured separately. See [`docs/deal-hunting.md`](docs/deal-hunting.md) for the prioritized pipelines, evidence-feed schema, quality gates, backfill, reconciliation, indexing, evaluation and limitations; [`docs/ai.md`](docs/ai.md) covers the API. Semantic retrieval, cross-platform matching, gRPC and live-model quality measurements remain unfinished.
 
 Run the current text-generation path with one command (requires a configured key and reachable compatible endpoint):
 

@@ -47,8 +47,15 @@ class Store:
 @pytest.mark.asyncio
 async def test_pipeline_batches_bounds_concurrency_and_retries() -> None:
     embedder, store = Embedder(fail_first=True), Store()
-    failures = await embed_documents([doc(str(i)) for i in range(10)], embedder, store,
-                                     batch_size=2, concurrency=2, max_retries=1, retry_delay_s=0)
+    failures = await embed_documents(
+        [doc(str(i)) for i in range(10)],
+        embedder,
+        store,
+        batch_size=2,
+        concurrency=2,
+        max_retries=1,
+        retry_delay_s=0,
+    )
     assert failures == []
     assert len(store.rows) == 5
     assert embedder.maximum <= 2
@@ -162,7 +169,10 @@ async def test_pgvector_testcontainer() -> None:
     from psycopg.types.json import JsonbDumper
 
     container = postgres_module.PostgresContainer(
-        "pgvector/pgvector:pg16", username="test", password="test", dbname="test",
+        "pgvector/pgvector:pg16",
+        username="test",
+        password="test",
+        dbname="test",
     )
     with container:
         dsn = container.get_connection_url().replace("postgresql+psycopg2://", "postgresql://")
@@ -174,7 +184,11 @@ async def test_pgvector_testcontainer() -> None:
             await conn.commit()
 
         async with pool_module.AsyncConnectionPool(
-            dsn, configure=configure, min_size=1, max_size=1, kwargs={"row_factory": dict_row},
+            dsn,
+            configure=configure,
+            min_size=1,
+            max_size=1,
+            kwargs={"row_factory": dict_row},
         ) as pool:
             store = PgVectorStore(pool, dimensions=2)
             await store.initialize()
@@ -192,12 +206,16 @@ async def test_dynamodb_testcontainer() -> None:
     boto3 = pytest.importorskip("boto3")
 
     container = localstack_module.LocalStackContainer(
-        image="localstack/localstack:3.8", region_name="us-east-1",
+        image="localstack/localstack:3.8",
+        region_name="us-east-1",
     ).with_services("dynamodb")
     with container:
         dynamodb = boto3.resource(
-            "dynamodb", endpoint_url=container.get_url(), region_name="us-east-1",
-            aws_access_key_id="test", aws_secret_access_key="test",
+            "dynamodb",
+            endpoint_url=container.get_url(),
+            region_name="us-east-1",
+            aws_access_key_id="test",
+            aws_secret_access_key="test",
         )
         table = dynamodb.create_table(
             TableName="vectors_test",
