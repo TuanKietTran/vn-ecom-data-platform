@@ -12,10 +12,19 @@ EXPORTER = ROOT / "scripts" / "export-ui-board.py"
 
 def tiny_png() -> bytes:
     def chunk(kind: bytes, payload: bytes) -> bytes:
-        return struct.pack(">I", len(payload)) + kind + payload + struct.pack(">I", zlib.crc32(kind + payload) & 0xFFFFFFFF)
+        return (
+            struct.pack(">I", len(payload))
+            + kind
+            + payload
+            + struct.pack(">I", zlib.crc32(kind + payload) & 0xFFFFFFFF)
+        )
 
-    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">II5B", 2, 3, 8, 2, 0, 0, 0))
-            + chunk(b"IDAT", zlib.compress(b"\x00\x00\x00\x00\x00\x00\x00" * 3)) + chunk(b"IEND", b""))
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", struct.pack(">II5B", 2, 3, 8, 2, 0, 0, 0))
+        + chunk(b"IDAT", zlib.compress(b"\x00\x00\x00\x00\x00\x00\x00" * 3))
+        + chunk(b"IEND", b"")
+    )
 
 
 def manifest_for(path: Path, *, states: list | None = None) -> dict:
@@ -29,12 +38,24 @@ def manifest_for(path: Path, *, states: list | None = None) -> dict:
         "dirty": True,
         "build_id": "local-build-1",
         "captured_at_utc": "2026-10-29T00:00:00Z",
-        "states": states if states is not None else [{
-            "id": "web-home", "platform": "web", "route": "/", "viewport": {"width": 390, "height": 844},
-            "png": "screen.png", "sha256": hashlib.sha256(image.read_bytes()).hexdigest(),
-            "size_bytes": image.stat().st_size, "pixel_dimensions": [2, 3], "captured_at_utc": "2026-10-29T00:00:00Z",
-            "source_files": [{"path": "view.tsx", "sha256": hashlib.sha256(source.read_bytes()).hexdigest()}],
-        }],
+        "states": states
+        if states is not None
+        else [
+            {
+                "id": "web-home",
+                "platform": "web",
+                "route": "/",
+                "viewport": {"width": 390, "height": 844},
+                "png": "screen.png",
+                "sha256": hashlib.sha256(image.read_bytes()).hexdigest(),
+                "size_bytes": image.stat().st_size,
+                "pixel_dimensions": [2, 3],
+                "captured_at_utc": "2026-10-29T00:00:00Z",
+                "source_files": [
+                    {"path": "view.tsx", "sha256": hashlib.sha256(source.read_bytes()).hexdigest()}
+                ],
+            }
+        ],
         "transitions": [],
         "coverage": {"web": {"status": "CAPTURED"}},
     }
@@ -43,7 +64,11 @@ def manifest_for(path: Path, *, states: list | None = None) -> dict:
 def export(tmp_path: Path, manifest: dict) -> subprocess.CompletedProcess:
     manifest_path = tmp_path / "manifest.json"
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
-    return subprocess.run([sys.executable, str(EXPORTER), str(manifest_path), str(tmp_path / "board.html")], capture_output=True, text=True)
+    return subprocess.run(
+        [sys.executable, str(EXPORTER), str(manifest_path), str(tmp_path / "board.html")],
+        capture_output=True,
+        text=True,
+    )
 
 
 def test_exports_real_web_capture_and_marks_native_unverified(tmp_path: Path) -> None:
