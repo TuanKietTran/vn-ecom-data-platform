@@ -184,3 +184,7 @@ make test        # + PySpark silver and dbt gold end-to-end (~2 min)
 
 CI (`.github/workflows/ci.yml`) runs lint, unit, the e2e suite on **both Parquet and Delta**, loads the Dagster
 definitions, imports the Airflow DAGs, validates every compose profile, and builds both images.
+
+## End-user apps
+
+The [Next.js web, SwiftUI iOS and Kotlin/Compose Android clients](docs/clients.md) provide deal hunting, product discovery, checkout breakdowns, device-local saved deals and chat through a NestJS gateway. Web uses a flat afterparty/ticket design; mobile uses native platform controls. See the client guide for setup, build commands and validation limits.

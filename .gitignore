@@ -22,3 +22,18 @@ logs/
 .ruff_cache/
 *.egg-info/
 dist/
+
+# Client build outputs and local SDKs
+node_modules/
+.next/
+*.tsbuildinfo
+apps/gateway/dist/
+packages/contracts/dist/
+apps/android/.gradle/
+apps/android/**/build/
+apps/android/local.properties
+apps/ios/**/xcuserdata/
+apps/ios/DerivedData/
+artifacts/
+apps/android/.idea/
+.DS_Store

@@ -1,0 +1,37 @@
+name: clients
+on:
+  push:
+    paths: ['apps/**', 'packages/**', 'package*.json', 'scripts/test-clients.py', '.github/workflows/clients.yml']
+  pull_request:
+    paths: ['apps/**', 'packages/**', 'package*.json', 'scripts/test-clients.py', '.github/workflows/clients.yml']
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '24', cache: npm}
+      - run: npm ci
+      - run: npm run build
+      - run: npm run typecheck
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python -m venv .venv && .venv/bin/pip install -e '.[ai]'
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:clients
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: '21'}
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew --no-daemon :app:compileDebugKotlin
+        working-directory: apps/android
+  ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: xcodebuild -project apps/ios/ShopLens.xcodeproj -scheme ShopLens -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build

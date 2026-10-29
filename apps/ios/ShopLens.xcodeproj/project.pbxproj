@@ -1,0 +1,23 @@
+// !$*UTF8*$!
+{
+ archiveVersion = 1; classes = {}; objectVersion = 77;
+ objects = {
+  A00000000000000000000001 = {isa = PBXProject; attributes = {LastUpgradeCheck = 1600;}; buildConfigurationList = A00000000000000000000002; compatibilityVersion = "Xcode 16.0"; developmentRegion = en; knownRegions = (en, Base,); mainGroup = A00000000000000000000003; productRefGroup = A00000000000000000000004; projectDirPath = ""; projectRoot = ""; targets = (A00000000000000000000005,);};
+  A00000000000000000000002 = {isa = XCConfigurationList; buildConfigurations = (A00000000000000000000006,A00000000000000000000007,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;};
+  A00000000000000000000003 = {isa = PBXGroup; children = (A00000000000000000000008,A00000000000000000000004,); sourceTree = "<group>";};
+  A00000000000000000000004 = {isa = PBXGroup; children = (A00000000000000000000009,); name = Products; sourceTree = "<group>";};
+  A00000000000000000000005 = {isa = PBXNativeTarget; buildConfigurationList = A0000000000000000000000A; buildPhases = (A0000000000000000000000B,A0000000000000000000000C,A0000000000000000000000D,); buildRules = (); dependencies = (); fileSystemSynchronizedGroups = (A00000000000000000000008,); name = ShopLens; productName = ShopLens; productReference = A00000000000000000000009; productType = "com.apple.product-type.application";};
+  A00000000000000000000006 = {isa = XCBuildConfiguration; buildSettings = {CLANG_ENABLE_MODULES = YES; SDKROOT = iphoneos; IPHONEOS_DEPLOYMENT_TARGET = 17.0; SWIFT_VERSION = 5.0;}; name = Debug;};
+  A00000000000000000000007 = {isa = XCBuildConfiguration; buildSettings = {CLANG_ENABLE_MODULES = YES; SDKROOT = iphoneos; IPHONEOS_DEPLOYMENT_TARGET = 17.0; SWIFT_VERSION = 5.0;}; name = Release;};
+  A00000000000000000000008 = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A00000000000000000000010,); path = ShopLens; sourceTree = "<group>";};
+  A00000000000000000000009 = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ShopLens.app; sourceTree = BUILT_PRODUCTS_DIR;};
+  A0000000000000000000000A = {isa = XCConfigurationList; buildConfigurations = (A0000000000000000000000E,A0000000000000000000000F,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;};
+  A0000000000000000000000B = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0;};
+  A0000000000000000000000C = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0;};
+  A0000000000000000000000D = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0;};
+  A0000000000000000000000E = {isa = XCBuildConfiguration; buildSettings = {PRODUCT_BUNDLE_IDENTIFIER = vn.shoplens.app; PRODUCT_NAME = "$(TARGET_NAME)"; INFOPLIST_FILE = ShopLens/InfoDebug.plist; TARGETED_DEVICE_FAMILY = "1,2"; CODE_SIGN_STYLE = Manual; SWIFT_EMIT_LOC_STRINGS = YES;}; name = Debug;};
+  A0000000000000000000000F = {isa = XCBuildConfiguration; buildSettings = {PRODUCT_BUNDLE_IDENTIFIER = vn.shoplens.app; PRODUCT_NAME = "$(TARGET_NAME)"; INFOPLIST_FILE = ShopLens/InfoRelease.plist; TARGETED_DEVICE_FAMILY = "1,2"; CODE_SIGN_STYLE = Manual; SWIFT_EMIT_LOC_STRINGS = YES;}; name = Release;};
+  A00000000000000000000010 = {isa = PBXFileSystemSynchronizedBuildFileExceptionSet; membershipExceptions = (InfoDebug.plist,InfoRelease.plist,); target = A00000000000000000000005;};
+ };
+ rootObject = A00000000000000000000001;
+}
