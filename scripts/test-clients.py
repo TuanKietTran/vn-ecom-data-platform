@@ -123,9 +123,27 @@ def main() -> None:
         processes: list[subprocess.Popen] = []
         logs = []
         services = [
-            ([str(vnecom), "ai", "serve", "--host", "127.0.0.1", "--port", str(api_port)], ROOT, f"{api_url}/health", "platform"),
+            (
+                [str(vnecom), "ai", "serve", "--host", "127.0.0.1", "--port", str(api_port)],
+                ROOT,
+                f"{api_url}/health",
+                "platform",
+            ),
             (["node", "dist/main.js"], ROOT / "apps/gateway", f"{gateway_url}/health", "gateway"),
-            (["node", "../../node_modules/next/dist/bin/next", "start", "--hostname", "127.0.0.1", "--port", str(web_port)], ROOT / "apps/web", web_url, "web"),
+            (
+                [
+                    "node",
+                    "../../node_modules/next/dist/bin/next",
+                    "start",
+                    "--hostname",
+                    "127.0.0.1",
+                    "--port",
+                    str(web_port),
+                ],
+                ROOT / "apps/web",
+                web_url,
+                "web",
+            ),
         ]
         try:
             for command, cwd, health_url, name in services:

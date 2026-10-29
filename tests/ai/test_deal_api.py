@@ -48,9 +48,7 @@ def test_upcoming_api_returns_supplied_windows_only_and_requires_synthetic_opt_i
         response = client.get("/deals/upcoming")
         assert response.status_code == 200
         payload = response.json()
-        assert [deal["code"] for deal in payload["deals"]] == [
-            "TEST-NON-SYNTHETIC-CONTRACT-SENTINEL"
-        ]
+        assert [deal["code"] for deal in payload["deals"]] == ["TEST-NON-SYNTHETIC-CONTRACT-SENTINEL"]
         voucher = payload["deals"][0]
         assert voucher["synthetic"] is False
         assert voucher["evidence_source"] == "public"

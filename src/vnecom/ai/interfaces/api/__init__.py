@@ -98,7 +98,9 @@ def create_app(
             catalog = read_catalog(platform)
             values = upcoming(catalog, include_synthetic=include_synthetic, limit=limit)
         except (OSError, ValueError) as exc:
-            raise HTTPException(503, "Deal evidence is unavailable or invalid; refresh the validated catalog") from exc
+            raise HTTPException(
+                503, "Deal evidence is unavailable or invalid; refresh the validated catalog"
+            ) from exc
         return {
             "deals": [deal.model_dump(mode="json") for deal in values],
             "synthetic_included": include_synthetic,
