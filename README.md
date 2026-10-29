@@ -1,7 +1,5 @@
 # vn-ecom-data-platform
 
-> Picking this up? Start with [HANDOFF.md](HANDOFF.md).
-
 Template data platform for tracking Vietnamese e-commerce — marketplaces **Shopee, Lazada, Tiki, TikTok Shop,
 Sendo** and retailers **Thế Giới Di Động, Điện Máy Xanh, Bách Hóa Xanh, FPT Shop, CellphoneS, Hasaki, Fahasa** —
 prices, discounts, sold counts, sellers and campaigns (1.1 → 12.12, payday, Tết, Black Friday).
