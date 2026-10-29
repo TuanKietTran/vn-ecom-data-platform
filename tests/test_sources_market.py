@@ -3,6 +3,7 @@
 import hashlib
 import json
 from datetime import date
+from pathlib import Path
 
 import httpx
 import pytest
@@ -11,7 +12,7 @@ from vnecom.ingest.accesstrade import AccessTradeConnector
 from vnecom.ingest.base import BlockedError, looks_blocked
 from vnecom.ingest.lazada_public import LazadaPublicConnector
 from vnecom.ingest.registry import SOURCES, run_source
-from vnecom.ingest.retail_jsonld import RetailJsonLdConnector, extract_products
+from vnecom.ingest.retail_jsonld import RetailJsonLdConnector, extract_itemlist_urls, extract_products
 from vnecom.ingest.sendo_public import SendoPublicConnector
 from vnecom.ingest.shopee_affiliate import ShopeeAffiliateConnector, affiliate_signature
 from vnecom.models import Platform
@@ -264,6 +265,31 @@ def test_extract_products_handles_graph_and_aggregate_offer():
     assert extract_products(agg)[0]["name"] == "Kem chống nắng"  # trailing comma tolerated
 
 
+def test_category_itemlist_fixture_extracts_product_urls():
+    fixture = (Path(__file__).parent / "fixtures" / "retail_itemlist.html").read_text(encoding="utf8")
+    assert "https://hasaki.vn/san-pham/kem-chong-nang.html" in extract_itemlist_urls(fixture)
+
+
+def test_category_page_discovery_is_robots_checked(settings):
+    base = "https://hasaki.vn"
+    fixture = (Path(__file__).parent / "fixtures" / "retail_itemlist.html").read_text(encoding="utf8")
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        if req.url.path == "/robots.txt":
+            return httpx.Response(200, text=ROBOTS_OK)
+        if req.url.path == "/sitemap.xml":
+            return httpx.Response(404)
+        if req.url.path == "/":
+            return httpx.Response(200, text=fixture)
+        return httpx.Response(404)
+
+    conn = _mock(RetailJsonLdConnector(settings, "hasaki"), handler)
+    assert conn.product_urls() == [
+        f"{base}/san-pham/kem-chong-nang.html",
+        f"{base}/san-pham/serum-vitamin-c.html",
+    ]
+
+
 def test_retail_jsonld_discovers_via_robots_and_maps(settings):
     s = settings.model_copy(update={"retail_max_products": 10})
     base = "https://www.thegioididong.com"
@@ -347,9 +373,10 @@ def test_retail_jsonld_skips_retailers_without_live_sitemaps(settings):
             "https://hasaki.vn/sitemap.xml",
             "https://hasaki.vn/sitemap/image/sitemap-image.xml",
             "https://hasaki.vn/sitemap-mobile.xml",
+            "https://hasaki.vn/",
         ],
         # No Sitemap line: discovery falls back to the base /sitemap.xml URL.
-        "fahasa": ["https://www.fahasa.com/sitemap.xml"],
+        "fahasa": ["https://www.fahasa.com/sitemap.xml", "https://www.fahasa.com/sach-trong-nuoc.html"],
     }
     for retailer, unavailable_maps in cases.items():
         base = RetailJsonLdConnector.config()[retailer]["base_url"]

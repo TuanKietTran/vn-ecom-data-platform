@@ -14,7 +14,9 @@ import xml.etree.ElementTree as ET
 from collections.abc import Iterator
 from datetime import date
 from functools import cached_property
+from html import unescape
 from typing import Any
+from urllib.parse import urljoin
 
 import httpx
 import yaml
@@ -56,6 +58,35 @@ def extract_products(html: str) -> list[dict[str, Any]]:
             except json.JSONDecodeError:
                 continue
     return out
+
+
+def extract_itemlist_urls(html: str) -> list[str]:
+    """Product URLs exposed by schema.org ItemList nodes on category pages."""
+    urls: set[str] = set()
+
+    def walk(node: Any) -> None:
+        if isinstance(node, list):
+            for item in node:
+                walk(item)
+        elif isinstance(node, dict):
+            types = node.get("@type")
+            if "ItemList" in (types if isinstance(types, list) else [types]):
+                for entry in node.get("itemListElement", []):
+                    item = entry.get("item", entry) if isinstance(entry, dict) else {}
+                    if isinstance(item, str):
+                        urls.add(item)
+                    elif isinstance(item, dict):
+                        url = item.get("url") or item.get("@id")
+                        if isinstance(url, str):
+                            urls.add(url)
+            walk(node.get("@graph"))
+
+    for block in _LDJSON.findall(html):
+        try:
+            walk(json.loads(block.strip()))
+        except json.JSONDecodeError:
+            continue
+    return sorted(urls)
 
 
 def _offer(p: dict[str, Any]) -> dict[str, Any]:
@@ -139,6 +170,21 @@ class RetailJsonLdConnector(Connector):
                     queue.append(u)
                 elif self.product_re.match(u):
                     urls.add(u)
+        # Explicit category pages supplement stale/absent sitemaps. All requests pass through
+        # get_text, which checks robots.txt and applies the connector's shared rate limiter.
+        for category_url in self.cfg.get("category_pages", []):
+            try:
+                html = self.get_text(category_url)
+            except Exception as e:  # noqa: BLE001 — discovery is best-effort
+                log.info("%s category %s: %s", self.retailer, category_url, e)
+                continue
+            urls.update(u for u in extract_itemlist_urls(html) if self.product_re.match(u))
+            for href in re.findall(r"<a\b[^>]*href=['\"]([^'\"]+)", html, re.I):
+                candidate = urljoin(category_url, unescape(href))
+                if self.product_re.match(candidate):
+                    urls.add(candidate)
+            if len(urls) >= self.settings.retail_max_products:
+                break
         return sorted(urls)[: self.settings.retail_max_products]
 
     # ── capture ────────────────────────────────────────────────────────
