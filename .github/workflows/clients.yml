@@ -18,6 +18,7 @@ jobs:
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
       - uses: astral-sh/setup-uv@v6
+      - run: uv venv .venv && uv pip install -e '.[ai,dev]'
       - run: npx playwright install --with-deps chromium
       - run: npm run test:clients
   android:
