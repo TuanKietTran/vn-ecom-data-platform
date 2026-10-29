@@ -29,7 +29,8 @@ def test_publish_hf_requires_confirmation_and_token(monkeypatch):
     monkeypatch.setattr(cli, "get_settings", lambda: object())
     result = CliRunner().invoke(cli.app, ["publish-hf", "me/data"])
     assert result.exit_code != 0
-    assert "--yes and HF_TOKEN" in result.output
+    captured_output = result.output + getattr(result, "stderr", "")
+    assert "upload requires --yes and HF_TOKEN" in captured_output
 
 
 def test_dry_run_skips_token_and_upload(tmp_path, monkeypatch):
