@@ -70,10 +70,44 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--bootstrap", default="localhost:19092")
     ap.add_argument("--topic", default="vnecom.price_events")
+    ap.add_argument(
+        "--expected-count", type=int, help="consume this finite batch and assert its valid event count"
+    )
     a = ap.parse_args()
+    if a.expected_count is not None and a.expected_count <= 0:
+        ap.error("--expected-count must be positive")
 
     s = get_settings()
     spark = get_spark(s, "vnecom-price-stream", extra_packages=[KAFKA_PKG.format(v=pyspark.__version__)])
+    fmt = s.vnecom_table_format
+    bronze_path = s.lake_path("bronze", "price_events", for_spark=True)
+
+    if a.expected_count is not None:
+        raw_batch = (
+            spark.read.format("kafka")
+            .option("kafka.bootstrap.servers", a.bootstrap)
+            .option("subscribe", a.topic)
+            .option("startingOffsets", "earliest")
+            .option("endingOffsets", "latest")
+            .load()
+        )
+        events_batch = parse_events(raw_batch).cache()
+        actual_count = events_batch.count()
+        if actual_count != a.expected_count:
+            raise RuntimeError(f"expected {a.expected_count} valid Kafka events, received {actual_count}")
+        jpath = spark._jvm.org.apache.hadoop.fs.Path(bronze_path)
+        fs = jpath.getFileSystem(spark._jsc.hadoopConfiguration())
+        before_count = spark.read.format(fmt).load(bronze_path).count() if fs.exists(jpath) else 0
+        events_batch.write.format(fmt).mode("append").partitionBy("event_date").save(bronze_path)
+        bronze_count = spark.read.format(fmt).load(bronze_path).count()
+        written_count = bronze_count - before_count
+        if written_count != a.expected_count:
+            raise RuntimeError(f"expected {a.expected_count} new bronze rows, wrote {written_count}")
+        print(f"Kafka events consumed: {actual_count}; new bronze rows: {written_count}")
+        events_batch.unpersist()
+        spark.stop()
+        return
+
     raw = (
         spark.readStream.format("kafka")
         .option("kafka.bootstrap.servers", a.bootstrap)
@@ -82,7 +116,6 @@ def main() -> None:
         .load()
     )
     events = parse_events(raw)
-    fmt = s.vnecom_table_format
     ckpt = s.lake_path("_checkpoints", for_spark=True)
 
     (

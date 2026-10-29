@@ -44,6 +44,24 @@ flowchart LR
 | **standard** | Docker: MinIO, Postgres, Spark master/worker, **Dagster** *or* **Airflow 3** | Docker, ~6 GB RAM |
 | **full** | standard + Trino, Superset, Redpanda, price producer, Spark streaming job | ~10 GB RAM |
 
+### Redpanda streaming verification
+
+With the full profile running and `.env` configured, execute the repeatable finite
+producer → Redpanda → existing Spark consumer → bronze check:
+
+```bash
+.venv/bin/python scripts/verify_redpanda_stream.py --count 100
+```
+
+The script uses a unique Kafka topic per run, launches the existing producer and
+`vnecom.spark.stream_prices` consumer as one-shot Compose tasks, and fails unless the
+consumer reads exactly the requested number of valid Kafka events and appends exactly
+the same number of rows to `bronze/price_events`. The consumer's normal streaming mode
+is unchanged; its `--expected-count` option is the finite batch verification path.
+This command requires an already-running full stack and launches temporary producer
+and consumer containers; it does not start the stack itself. Runtime counts are not
+claimed until this check has been run successfully against Redpanda and MinIO.
+
 ## Quick start (lite)
 
 ```bash
