@@ -136,7 +136,11 @@ Public endpoints are undocumented and change; payload mapping reads several know
 connector has a mocked-HTTP test pinning the shape it expects. Add a source: subclass `Connector`, register it
 in `src/vnecom/ingest/registry.py`, add it to `config/platforms.yaml`.
 
-## AI layer (ShopLens)
+## Hunt AI layer
+
+The product is **Hunt (formerly ShopLens)**.
+
+**ASSUMPTION — deployment compatibility:** the existing PostgreSQL database identifier remains `shoplens` in `.env.example`, `Makefile`, `docker/compose.yml`, and `docker/postgres/init.sql`; changing it would require an explicit data migration. The legacy conversation key `shoplens.conversations.v1` is read once and migrated to `hunt.conversations.v1` so saved browser history is preserved. User-facing client and workspace names are Hunt.
 
 The optional AI layer adds browser/API chat, indexed product search, and **Deal hunt** for specific products with voucher combinations. Data reports and checkout arithmetic work without a language model. Run `.venv/bin/vnecom deals-demo` for explicitly synthetic deal examples, then `.venv/bin/vnecom ai serve`. Install `.[lite,ai]` and configure `VNECOM_AI_ENABLED`, `VNECOM_AI_API_KEY`, and optionally `VNECOM_AI_BASE_URL` / `VNECOM_AI_MODEL` to enable compatible model explanations. Gemma/GPT-OSS weights and serving are configured separately. See [`docs/deal-hunting.md`](docs/deal-hunting.md) for the prioritized pipelines, evidence-feed schema, quality gates, backfill, reconciliation, indexing, evaluation and limitations; [`docs/ai.md`](docs/ai.md) covers the API. Semantic retrieval, cross-platform matching, gRPC and live-model quality measurements remain unfinished.
 
@@ -156,7 +160,7 @@ transform/dbt/     staging -> intermediate -> marts (+ seeds: campaign calendar,
 orchestration/     dagster/ (assets, checks, schedules) · airflow/dags/
 docker/            platform + airflow images, compose with tier profiles, trino/superset config
 tests/             unit + Spark/dbt end-to-end (run on parquet and delta in CI)
-docs/              architecture & design notes, including the [ShopLens AI layer](docs/ai.md)
+docs/              architecture & design notes, including the [Hunt AI layer](docs/ai.md)
 ```
 
 ## Customising

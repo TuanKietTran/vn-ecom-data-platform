@@ -1,972 +1,150 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import type {
-  ChatReply,
-  ChatStatus,
-  Deal,
-  DealResults,
-  Product,
-  Turn,
-} from "@shoplens/contracts";
+import { useEffect, useState } from "react";
+import type { ChatReply, Deal, Product, Turn } from "@hunt/contracts";
 
-type View = "hunt" | "discover" | "chat" | "saved";
-const currency = (value: number | null) =>
-  value === null
-    ? "Not yet known"
-    : new Intl.NumberFormat("vi-VN").format(value) + " ₫";
-async function request<T>(
-  path: string,
-  body?: unknown,
-  signal?: AbortSignal,
-): Promise<T> {
-  const r = await fetch("/api/" + path, {
+type View = "home" | "hunt" | "discover" | "saved";
+type UpcomingDeal = {
+  code: string;
+  platform: string;
+  seller: string | null;
+  product_keys: string[];
+  starts_at: string;
+  expires_at: string;
+  discount_vnd: number;
+  percent: number;
+  cap_vnd: number | null;
+  min_spend_vnd: number;
+  eligibility: string[];
+  checkout_payment_method: string | null;
+  cashback_vnd: number;
+  evidence_source: string;
+  evidence_url: string | null;
+  as_of: string;
+  synthetic: boolean;
+};
+type UpcomingResponse = {
+  deals: UpcomingDeal[];
+  synthetic_included: boolean;
+  notice: string;
+};
+type DealResults = {
+  eligible: Deal[];
+  conditional: Deal[];
+  fewest_conditions: Deal[];
+  price_history?: Deal[];
+  notice: string;
+};
+const money = (v: number | null | undefined) =>
+  v == null ? "Not provided" : new Intl.NumberFormat("vi-VN").format(v) + " ₫";
+async function api<T>(path: string, body?: unknown): Promise<T> {
+  const response = await fetch("/api/" + path, {
     method: body === undefined ? "GET" : "POST",
     headers: body === undefined ? {} : { "Content-Type": "application/json" },
     body: body === undefined ? undefined : JSON.stringify(body),
-    signal,
   });
-  let data;
-  try {
-    data = await r.json();
-  } catch {
-    throw new Error("The service returned an unreadable response.");
-  }
-  if (!r.ok)
-    throw new Error(
-      typeof data.message === "string"
-        ? data.message
-        : typeof data.detail === "string"
-          ? data.detail
-          : "The request could not be completed.",
-    );
-  return data;
-}
-function Arrow() {
-  return (
-    <svg
-      className="arrow-icon"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      aria-hidden="true"
-    >
-      <path d="M5 19 19 5M5 5h14v14" />
-    </svg>
-  );
-}
-function Spark() {
-  return (
-    <svg
-      className="spark-icon"
-      viewBox="0 0 32 32"
-      fill="currentColor"
-      aria-hidden="true"
-    >
-      <path d="m14 0 4 0 1 10 8-6 3 4-8 7 10 0v4l-10 1 6 8-4 3-7-9-1 10h-4l-1-10-8 6-3-4 9-7L0 16v-4l10-1-6-8 4-3 7 9Z" />
-    </svg>
-  );
-}
-function Heart({ filled = false }: { filled?: boolean }) {
-  return (
-    <svg
-      className="heart-icon"
-      viewBox="0 0 24 24"
-      fill={filled ? "currentColor" : "none"}
-      stroke="currentColor"
-      strokeWidth="1.5"
-      aria-hidden="true"
-    >
-      <path d="M12 21 3.5 12.7C-2 7.1 5 0 12 7c7-7 14 .1 8.5 5.7Z" />
-    </svg>
-  );
-}
-function Headphones() {
-  return (
-    <svg className="headphones" viewBox="0 0 300 310" aria-hidden="true">
-      <path
-        d="M61 175V131C61 17 239 17 239 131V175"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="28"
-      />
-      <path
-        d="M62 155V130C62 23 238 23 238 130V155"
-        fill="none"
-        stroke="#f3eedf"
-        strokeWidth="5"
-      />
-      <rect
-        x="35"
-        y="151"
-        width="62"
-        height="107"
-        rx="28"
-        fill="currentColor"
-        transform="rotate(-10 65 200)"
-      />
-      <rect
-        x="203"
-        y="151"
-        width="62"
-        height="107"
-        rx="28"
-        fill="currentColor"
-        transform="rotate(10 235 200)"
-      />
-      <path d="M75 176v60M225 176v60" stroke="#f3eedf" strokeWidth="3" />
-      <path d="M127 279h46" stroke="currentColor" strokeWidth="3" />
-    </svg>
-  );
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok)
+    throw new Error(data.message || data.detail || "The service is unavailable.");
+  return data as T;
 }
 export function Workspace({ view }: { view: View }) {
-  const [status, setStatus] = useState<ChatStatus | null>(null),
-    [connection, setConnection] = useState("Connecting");
-  const [query, setQuery] = useState(""),
-    [budget, setBudget] = useState(""),
-    [payment, setPayment] = useState(""),
-    [memberships, setMemberships] = useState(""),
-    [newUser, setNewUser] = useState(""),
-    [variant, setVariant] = useState(""),
-    [includeDemo, setIncludeDemo] = useState(false),
-    [filters, setFilters] = useState(false);
-  const [results, setResults] = useState<DealResults | null>(null),
-    [group, setGroup] = useState("eligible"),
-    [products, setProducts] = useState<Product[]>([]),
-    [busy, setBusy] = useState(false),
-    [error, setError] = useState(""),
-    [searched, setSearched] = useState(false);
-  const [saved, setSaved] = useState<Deal[]>([]),
-    [storageReady, setStorageReady] = useState(false),
-    [storageError, setStorageError] = useState("");
-  const [messages, setMessages] = useState<Turn[]>([]),
-    [draft, setDraft] = useState(""),
-    [modelMode, setModelMode] = useState(false);
-  const chatEnd = useRef<HTMLDivElement>(null),
-    pending = useRef<AbortController | null>(null),
-    searchId = useRef(0);
+  const [upcoming, setUpcoming] = useState<UpcomingResponse | null>(null);
+  const [watchlist, setWatchlist] = useState<Deal[]>([]);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<DealResults | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [includeSynthetic, setIncludeSynthetic] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [draft, setDraft] = useState("");
+  const [messages, setMessages] = useState<Turn[]>([]);
   useEffect(() => {
-    const controller = new AbortController();
-    request<ChatStatus>("status", undefined, controller.signal)
-      .then((data) => {
-        setStatus(data);
-        setConnection(
-          data.data_available ? "Platform connected" : "Data not ready",
-        );
-      })
-      .catch(() => setConnection("Platform offline"));
-    return () => controller.abort();
-  }, []);
-  useEffect(() => {
+    let cancelled = false;
+    api<UpcomingResponse>("upcoming?limit=20")
+      .then((data) => !cancelled && setUpcoming(data))
+      .catch((e: unknown) => !cancelled && setError(e instanceof Error ? e.message : "Upcoming vouchers unavailable."));
     try {
-      const data = JSON.parse(
-        localStorage.getItem("shoplens.saved.v1") || "[]",
-      );
-      if (Array.isArray(data))
-        setSaved(
-          data
-            .filter(
-              (d) => d?.offer?.offer_id && typeof d?.checked_at === "string",
-            )
-            .slice(0, 50),
-        );
+      const prior = JSON.parse(localStorage.getItem("hunt.watchlist.v1") || "[]");
+      if (Array.isArray(prior)) setWatchlist(prior.filter((d) => d?.offer?.offer_id).slice(0, 50));
     } catch {
-      setStorageError("Saved deals could not be restored in this browser.");
+      setError("This device could not read its saved watchlist.");
     }
-    setStorageReady(true);
+    return () => { cancelled = true; };
   }, []);
   useEffect(() => {
-    if (storageReady)
-      try {
-        localStorage.setItem("shoplens.saved.v1", JSON.stringify(saved));
-      } catch {
-        setStorageError(
-          "Browser storage is unavailable. Saved deals will last for this visit only.",
-        );
-      }
-  }, [saved, storageReady]);
-  useEffect(() => {
-    chatEnd.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages, busy]);
-  useEffect(
-    () => () => {
-      pending.current?.abort();
-    },
-    [],
-  );
-  function toggleSaved(deal: Deal) {
-    setSaved((current) =>
-      current.some((d) => d.offer.offer_id === deal.offer.offer_id)
-        ? current.filter((d) => d.offer.offer_id !== deal.offer.offer_id)
-        : [deal, ...current].slice(0, 50),
-    );
-  }
-  async function search(demo = includeDemo, text = query) {
-    if (text.trim().length < 2) {
-      setError("Give us at least two characters to find your product.");
-      return;
-    }
-    const id = ++searchId.current;
-    setBusy(true);
+    try { localStorage.setItem("hunt.watchlist.v1", JSON.stringify(watchlist)); }
+    catch { setError("Device storage is unavailable; watchlist changes may not persist."); }
+  }, [watchlist]);
+  async function loadUpcoming(optIn = includeSynthetic) {
     setError("");
-    setSearched(true);
+    try {
+      setUpcoming(await api<UpcomingResponse>(`upcoming?limit=20&include_synthetic=${optIn}`));
+    } catch (e) { setError(e instanceof Error ? e.message : "Upcoming vouchers unavailable."); }
+  }
+  async function search(event?: React.FormEvent) {
+    event?.preventDefault();
+    if (query.trim().length < 2) { setError("Enter at least two characters."); return; }
+    setBusy(true); setError("");
     try {
       if (view === "discover") {
-        const data = await request<{ products: Product[] }>(
-          "products?" +
-            new URLSearchParams({
-              query: text,
-              include_synthetic: String(demo),
-            }),
-        );
-        if (id === searchId.current) setProducts(data.products);
+        const response = await api<{ products: Product[] }>(`products?query=${encodeURIComponent(query)}&include_synthetic=${includeSynthetic}`);
+        setProducts(response.products);
       } else {
-        const data = await request<DealResults>("deals", {
-          query: text.trim(),
-          target_vnd: budget ? Number(budget) : null,
-          product_key: variant.trim() || null,
-          include_synthetic: demo,
-          eligibility: {
-            payment_method: payment.trim() || null,
-            memberships: memberships.trim()
-              ? memberships.split(",").map((v) => v.trim())
-              : null,
-            new_user: newUser ? newUser === "yes" : null,
-          },
-        });
-        if (id === searchId.current) {
-          setResults(data);
-          setGroup(data.eligible.length ? "eligible" : "conditional");
-        }
+        setResults(await api<DealResults>("deals", { query: query.trim(), include_synthetic: includeSynthetic, eligibility: {} }));
       }
-    } catch (e) {
-      if (id === searchId.current)
-        setError(e instanceof Error ? e.message : "Please try again.");
-    } finally {
-      if (id === searchId.current) setBusy(false);
-    }
+    } catch (e) { setError(e instanceof Error ? e.message : "Search failed."); }
+    finally { setBusy(false); }
   }
-  function demo() {
-    setIncludeDemo(true);
-    setQuery("Sony WH-1000XM5");
-    void search(true, "Sony WH-1000XM5");
-  }
-  async function send() {
+  async function sendChat(event: React.FormEvent) {
+    event.preventDefault();
     const text = draft.trim();
     if (!text || busy) return;
-    const controller = new AbortController();
-    pending.current = controller;
-    const history = messages
-      .slice(-20)
-      .map((m) => ({ ...m, content: m.content.slice(0, 8000) }));
-    setMessages((m) => [...m, { role: "user", content: text }]);
-    setDraft("");
-    setBusy(true);
-    setError("");
+    const history = messages.slice(-20);
+    setMessages((prior) => [...prior, { role: "user", content: text }]);
+    setDraft(""); setBusy(true); setError("");
     try {
-      const result = await request<ChatReply>(
-        "chat?mode=" + (modelMode ? "model" : "data"),
-        { message: text, history },
-        controller.signal,
-      );
-      setMessages((m) => [...m, { role: "assistant", content: result.answer }]);
-    } catch (e) {
-      setError(
-        controller.signal.aborted
-          ? "Response stopped."
-          : e instanceof Error
-            ? e.message
-            : "Could not send your message.",
-      );
-    } finally {
-      setBusy(false);
-      pending.current = null;
-    }
+      const response = await api<ChatReply>("chat?mode=data", { message: text, history });
+      setMessages((prior) => [...prior, { role: "assistant", content: response.answer }]);
+    } catch (e) { setError(e instanceof Error ? e.message : "Chat unavailable."); }
+    finally { setBusy(false); }
   }
-  const offers = results?.[group as keyof DealResults];
-  const visibleDeals = Array.isArray(offers) ? (offers as Deal[]) : [];
-  return (
-    <div className="site">
-      <header className="masthead">
-        <Link href="/" className="brand" aria-label="ShopLens home">
-          <span className="brand-mark">
-            S
-            <span>
-              <Spark />
-            </span>
-          </span>
-          <span>
-            SHOP
-            <br />
-            LENS<span className="brand-period">.</span>
-          </span>
-        </Link>
-        <nav aria-label="Main navigation">
-          {(
-            [
-              ["hunt", "/", "Deal hunt"],
-              ["discover", "/discover", "Discover"],
-              ["chat", "/chat", "Ask ShopLens"],
-              ["saved", "/saved", "Saved"],
-            ] as const
-          ).map(([id, url, label]) => (
-            <Link
-              key={id}
-              href={url}
-              aria-current={view === id ? "page" : undefined}
-            >
-              {label}
-              {id === "saved" && saved.length > 0 && (
-                <span className="count">{saved.length}</span>
-              )}
-            </Link>
-          ))}
-        </nav>
-        <div className="connection">
-          <i className={status?.data_available ? "online" : ""} />
-          {connection}
-        </div>
-      </header>
-      {view === "hunt" && (
-        <>
-          <section className="hero">
-            <div className="hero-copy">
-              <div className="eyebrow">
-                <span className="tiny-star">
-                  <Spark />
-                </span>{" "}
-                YOUR INVITE TO THE DEAL AFTERPARTY
-              </div>
-              <h1>
-                THE DEAL
-                <br />
-                <em>AFTERPARTY.</em>
-              </h1>
-              <p>
-                The product you came for. The codes you didn’t see coming.
-                <br />
-                One checkout total. Every condition in the open.
-              </p>
-              <div className="hero-actions">
-                <a className="button ink" href="#hunt">
-                  Let’s find your deal{" "}
-                  <span>
-                    <Arrow />
-                  </span>
-                </a>
-                <button className="text-button" onClick={demo} disabled={busy}>
-                  Take the demo for a spin <Arrow />
-                </button>
-              </div>
-              <div className="hero-foot">
-                <span>01 / EXACT PRODUCT</span>
-                <span>02 / ELIGIBLE CODES</span>
-                <span>03 / THE FULL MATH</span>
-              </div>
-            </div>
-            <div className="hero-art" aria-hidden="true">
-              <span className="art-orbit orbit-one" />
-              <span className="art-orbit orbit-two" />
-              <div className="poster-ticket">
-                <div className="ticket-top">
-                  THE DEAL YOU CAME FOR <span>№ 001</span>
-                </div>
-                <Headphones />
-                <div className="poster-bottom">
-                  <b>
-                    LESS HYPE.
-                    <br />
-                    MORE HEADROOM.
-                  </b>
-                  <span className="barcode" />
-                </div>
-              </div>
-              <div className="lime-sticker">
-                YOU’RE
-                <br />
-                ON THE
-                <br />
-                <b>LIST.</b>
-              </div>
-              <span className="art-star">
-                <Spark />
-              </span>
-              <span className="art-caption">
-                ILLUSTRATION / NOT A LIVE OFFER
-              </span>
-            </div>
-          </section>
-          <div className="ticker">
-            <span>NO MYSTERY TOTALS</span>
-            <b>
-              <Spark />
-            </b>
-            <span>NO CASHBACK CONFUSION</span>
-            <b>
-              <Spark />
-            </b>
-            <span>NO MADE-UP DISCOUNTS</span>
-            <b>
-              <Spark />
-            </b>
-            <span>JUST THE FULL PICTURE</span>
-          </div>
-        </>
-      )}
-      <main className="main">
-        {view !== "chat" && (
-          <div className="section-heading">
-            <div>
-              <span className="eyebrow">
-                {view === "hunt"
-                  ? "THE MAIN EVENT"
-                  : view === "discover"
-                    ? "THE PRODUCT FLOOR"
-                    : "YOUR SHORTLIST"}
-              </span>
-              <h2>
-                {view === "hunt"
-                  ? "Your next good find."
-                  : view === "discover"
-                    ? "Specific beats endless scrolling."
-                    : "Good finds. Kept close."}
-              </h2>
-            </div>
-            <span className="section-caption">
-              {view === "saved"
-                ? "Saved on this device. Recheck before buying."
-                : "Facts first. Confetti second."}
-            </span>
-          </div>
-        )}
-        {storageError && (
-          <p className="notice" role="status">
-            {storageError}
-          </p>
-        )}
-        {(view === "hunt" || view === "discover") && (
-          <section id="hunt" className="search-panel">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                void search();
-              }}
-            >
-              <div className="search-row">
-                <label className="search-input">
-                  <span>WHAT ARE WE HUNTING?</span>
-                  <input
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    minLength={2}
-                    maxLength={300}
-                    placeholder={
-                      view === "discover"
-                        ? "A product, model, or brand…"
-                        : "Sony WH-1000XM5, iPhone 16, your next obsession…"
-                    }
-                    required
-                  />
-                </label>
-                {view === "hunt" && (
-                  <label className="budget-input">
-                    <span>YOUR CEILING / VND</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      placeholder="6,000,000"
-                      value={budget}
-                      onChange={(e) => setBudget(e.target.value)}
-                    />
-                  </label>
-                )}
-                <button className="button red" disabled={busy}>
-                  {busy
-                    ? "Searching…"
-                    : view === "discover"
-                      ? "Search products"
-                      : "Find my deal"}{" "}
-                  <span>
-                    <Arrow />
-                  </span>
-                </button>
-              </div>
-              <div className="search-options">
-                <label className="check">
-                  <input
-                    type="checkbox"
-                    checked={includeDemo}
-                    onChange={(e) => setIncludeDemo(e.target.checked)}
-                  />
-                  Include clearly labeled synthetic demo data
-                </label>
-                {view === "hunt" && (
-                  <button
-                    type="button"
-                    className="text-button"
-                    aria-expanded={filters}
-                    onClick={() => setFilters(!filters)}
-                  >
-                    Eligibility & exact variant {filters ? "−" : "+"}
-                  </button>
-                )}
-              </div>
-              {filters && view === "hunt" && (
-                <div className="filter-grid">
-                  <label>
-                    Payment method
-                    <input
-                      placeholder="Unknown / e.g. Demo Bank"
-                      value={payment}
-                      onChange={(e) => setPayment(e.target.value)}
-                    />
-                  </label>
-                  <label>
-                    Exact variant key
-                    <input
-                      placeholder="Model, color, capacity, warranty"
-                      value={variant}
-                      onChange={(e) => setVariant(e.target.value)}
-                    />
-                  </label>
-                  <label>
-                    Memberships
-                    <input
-                      placeholder="Comma-separated, or leave unknown"
-                      value={memberships}
-                      onChange={(e) => setMemberships(e.target.value)}
-                    />
-                  </label>
-                  <label>
-                    New-user eligibility
-                    <select
-                      value={newUser}
-                      onChange={(e) => setNewUser(e.target.value)}
-                    >
-                      <option value="">Unknown</option>
-                      <option value="yes">Eligible</option>
-                      <option value="no">Not eligible</option>
-                    </select>
-                  </label>
-                </div>
-              )}
-            </form>
-          </section>
-        )}
-        {error && (
-          <p className="error" role="alert">
-            {error}
-          </p>
-        )}
-        {view === "hunt" && (
-          <>
-            {results && (
-              <>
-                <div className="result-tabs" aria-label="Deal ranking">
-                  {[
-                    ["eligible", "Lowest eligible"],
-                    ["conditional", "Worth checking"],
-                    ["fewest_conditions", "Fewer hoops"],
-                    ["price_history", "Price history"],
-                  ].map(([key, label]) => (
-                    <button
-                      key={key}
-                      className={group === key ? "selected" : ""}
-                      onClick={() => setGroup(key)}
-                    >
-                      {label}{" "}
-                      <small>
-                        {Array.isArray(results[key as keyof DealResults])
-                          ? (results[key as keyof DealResults] as Deal[]).length
-                          : 0}
-                      </small>
-                    </button>
-                  ))}
-                </div>
-                <p className="result-note">{results.notice}</p>
-              </>
-            )}
-            <div className="deal-grid">
-              {visibleDeals.map((deal, i) => (
-                <DealCard
-                  key={deal.offer.offer_id}
-                  deal={deal}
-                  number={i + 1}
-                  saved={saved.some(
-                    (s) => s.offer.offer_id === deal.offer.offer_id,
-                  )}
-                  onSave={() => toggleSaved(deal)}
-                />
-              ))}
-            </div>
-            {!busy && visibleDeals.length === 0 && (
-              <div className="empty-state">
-                <span className="empty-stamp">
-                  <Spark />
-                </span>
-                <h3>
-                  {searched
-                    ? "No matching tickets. Yet."
-                    : "Your best deal starts with a name."}
-                </h3>
-                <p>
-                  {searched
-                    ? "Try a specific product or change your eligibility. Live offers need a validated feed."
-                    : "Search an exact product to compare checkout estimates, not just sticker prices."}
-                </p>
-                <button className="text-button" onClick={demo}>
-                  Try the synthetic deal demo <Arrow />
-                </button>
-              </div>
-            )}
-          </>
-        )}
-        {view === "discover" && (
-          <div className="product-list">
-            {products.map((p) => (
-              <article key={p.index_id} className="product-row">
-                <div className="product-initial">{p.title.slice(0, 1)}</div>
-                <div>
-                  <span className="eyebrow">
-                    {p.platform} / {p.source_tier}
-                  </span>
-                  <h3>{p.title}</h3>
-                  <p>
-                    Observed {new Date(p.captured_at).toLocaleString()} ·
-                    Variant equivalence unverified
-                  </p>
-                </div>
-                <div className="product-price">
-                  <b>{currency(p.price_vnd)}</b>
-                  {safeUrl(p.url) && (
-                    <a href={p.url} target="_blank" rel="noopener noreferrer">
-                      View listing <Arrow />
-                    </a>
-                  )}
-                </div>
-              </article>
-            ))}
-            {!busy && products.length === 0 && (
-              <div className="empty-state">
-                <h3>
-                  {searched
-                    ? "Nothing fresh matches that search."
-                    : "Skip the rabbit hole."}
-                </h3>
-                <p>
-                  Search the indexed catalog. Results are listing candidates;
-                  delivery and vouchers are not included.
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-        {view === "saved" && (
-          <>
-            <div className="deal-grid">
-              {saved.map((deal, i) => (
-                <DealCard
-                  key={deal.offer.offer_id}
-                  deal={deal}
-                  number={i + 1}
-                  saved
-                  onSave={() => toggleSaved(deal)}
-                  snapshot
-                />
-              ))}
-            </div>
-            {saved.length === 0 && (
-              <div className="empty-state">
-                <span className="empty-stamp">
-                  <Heart />
-                </span>
-                <h3>Make a little room for a good find.</h3>
-                <p>
-                  Save a deal from the hunt to keep its price breakdown here. No
-                  account required.
-                </p>
-                <Link className="button ink" href="/">
-                  Start a deal hunt <Arrow />
-                </Link>
-              </div>
-            )}
-          </>
-        )}
-        {view === "chat" && (
-          <section className="chat-room">
-            <div className="chat-heading">
-              <div>
-                <span className="eyebrow">A SECOND PAIR OF EYES</span>
-                <h2>Ask before you add to cart.</h2>
-              </div>
-              <button
-                className="text-button"
-                onClick={() => {
-                  setMessages([]);
-                  setError("");
-                }}
-                disabled={busy}
-              >
-                New conversation <Arrow />
-              </button>
-            </div>
-            <p className="result-note">
-              {modelMode
-                ? "Messages and gold context go to the configured model provider."
-                : "Platform data mode. Fixed analytics and indexed products, without an LLM."}{" "}
-              Conversations stay in this page session.
-            </p>
-            <div className="chat-messages" aria-live="polite">
-              {messages.length === 0 && (
-                <div className="chat-suggestions">
-                  {[
-                    "Compare GMV yesterday",
-                    "Find a cheaper phone",
-                    "Help me combine vouchers",
-                  ].map((prompt) => (
-                    <button key={prompt} onClick={() => setDraft(prompt)}>
-                      {prompt}
-                      <span>
-                        <Arrow />
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-              {messages.map((message, i) => (
-                <article className={"chat-message " + message.role} key={i}>
-                  <b>{message.role === "user" ? "YOU" : "SHOPLENS"}</b>
-                  <p>{message.content}</p>
-                  {message.role === "assistant" &&
-                    message.content.includes("Deal hunt") && (
-                      <Link href="/">
-                        Open Deal hunt <Arrow />
-                      </Link>
-                    )}
-                </article>
-              ))}
-              {busy && <p role="status">Checking the evidence…</p>}
-              <div ref={chatEnd} />
-            </div>
-            <form
-              className="chat-composer"
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (busy) pending.current?.abort();
-                else void send();
-              }}
-            >
-              <textarea
-                aria-label="Message"
-                maxLength={8000}
-                placeholder="Ask about your data or your next find…"
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                onKeyDown={(e) => {
-                  if (
-                    e.key === "Enter" &&
-                    !e.shiftKey &&
-                    !e.nativeEvent.isComposing
-                  ) {
-                    e.preventDefault();
-                    if (!busy) void send();
-                  }
-                }}
-              />
-              <div>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={modelMode}
-                    disabled={!status?.model_configured || busy}
-                    onChange={(e) => setModelMode(e.target.checked)}
-                  />
-                  {status?.model_configured
-                    ? "Use " + status.model
-                    : "Model not connected · Data mode available"}
-                </label>
-                <button
-                  className="button ink"
-                  disabled={!busy && !draft.trim()}
-                >
-                  {busy ? (
-                    "Stop"
-                  ) : (
-                    <>
-                      Send <Arrow />
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          </section>
-        )}
-      </main>
-      <footer className="footer">
-        <span className="footer-brand">
-          SHOPLENS <Spark />
-        </span>
-        <p>
-          Good prices deserve good evidence.
-          <br />
-          Estimates are not checkout guarantees. Synthetic data is always
-          labeled.
-        </p>
-        <span>MADE FOR THE FIND.</span>
-      </footer>
-    </div>
-  );
-}
-function safeUrl(value?: string | null) {
-  try {
-    return Boolean(
-      value && ["https:", "http:"].includes(new URL(value).protocol),
-    );
-  } catch {
-    return false;
+  function toggle(deal: Deal) {
+    setWatchlist((prior) => prior.some((item) => item.offer.offer_id === deal.offer.offer_id)
+      ? prior.filter((item) => item.offer.offer_id !== deal.offer.offer_id)
+      : [deal, ...prior].slice(0, 50));
   }
+  const nav = [["/", "Home"], ["/hunt", "Hunt"], ["/discover", "Discover"], ["/saved", "Saved"]];
+  return <div className="app-shell">
+    <header className="topbar">
+      <Link href="/" className="wordmark" aria-label="hunt home"><span className="mark">h</span><span>hunt</span></Link>
+      <nav aria-label="Main navigation">{nav.map(([href, label]) => <Link key={href} href={href} aria-current={(href === "/" ? view === "home" : href.slice(1) === view) ? "page" : undefined}>{label}{label === "Saved" && watchlist.length > 0 ? ` (${watchlist.length})` : ""}</Link>)}</nav>
+    </header>
+    <main>
+      {error && <p className="alert" role="alert">{error}</p>}
+      {view === "home" && <>
+        <section className="home-intro"><p className="kicker">Good finds, grounded in evidence.</p><h1>Ask. Explore. Hunt.</h1><p>Compare what is actually in the supplied catalog. No invented prices or availability.</p><Link className="button primary" href="/hunt">Start a hunt</Link></section>
+        <section className="panel chat-panel" aria-labelledby="chat-title"><div className="panel-head"><div><p className="kicker">CHAT</p><h2 id="chat-title">Ask about your shopping data</h2></div><span className="muted">Evidence-backed data mode</span></div>
+          <div className="conversation" aria-live="polite">{messages.length === 0 && <p className="muted">Ask a question. Answers use available platform data, not live model output.</p>}{messages.map((message, index) => <article key={index} className="message"><b>{message.role === "user" ? "You" : "Hunt"}</b><p>{message.content}</p></article>)}{busy && <p role="status">Checking supplied data…</p>}</div>
+          <form onSubmit={sendChat} className="chat-form"><label className="sr-only" htmlFor="chat-input">Message</label><input id="chat-input" value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Ask a question" maxLength={8000} /><button className="button primary" disabled={busy || !draft.trim()}>Send</button></form>
+        </section>
+        <UpcomingWidget data={upcoming} includeSynthetic={includeSynthetic} onOptIn={(next) => { setIncludeSynthetic(next); void loadUpcoming(next); }} />
+      </>}
+      {(view === "hunt" || view === "discover") && <section>
+        <div className="page-heading"><p className="kicker">{view === "hunt" ? "DEAL SEARCH" : "PRODUCT CATALOG"}</p><h1>{view === "hunt" ? "Find a good deal." : "Discover products."}</h1><p>Only supplied catalog records are shown. Prices and stock are not inferred.</p></div>
+        <form className="search-form" onSubmit={search}><label htmlFor="query">Product or model</label><div className="search-line"><input id="query" value={query} onChange={(e) => setQuery(e.target.value)} minLength={2} maxLength={300} placeholder="Product name or model" required /><button className="button primary" disabled={busy}>{busy ? "Searching…" : "Search"}</button></div><label className="opt-in"><input type="checkbox" checked={includeSynthetic} onChange={(e) => setIncludeSynthetic(e.target.checked)} /> Include explicitly labelled synthetic examples</label></form>
+        {view === "hunt" && results && <><p className="notice">{results.notice}</p><div className="cards">{[...results.eligible, ...results.conditional].map((deal) => <DealCard key={deal.offer.offer_id} deal={deal} saved={watchlist.some((x) => x.offer.offer_id === deal.offer.offer_id)} onToggle={() => toggle(deal)} />)}</div>{!results.eligible.length && !results.conditional.length && <p className="empty">No matching deal evidence in the catalog.</p>}</>}
+        {view === "discover" && <div className="product-list">{products.map((product) => <article className="product-row" key={product.index_id}><div><span className="tag">{product.source_tier}{product.source_tier === "synthetic" ? " · SYNTHETIC" : ""}</span><h2>{product.title}</h2><p>{product.platform} · Captured {new Date(product.captured_at).toLocaleString()}</p></div><strong>{money(product.price_vnd)}</strong>{product.url && <a href={product.url} target="_blank" rel="noreferrer">Source ↗</a>}</article>)}</div>}
+      </section>}
+      {view === "saved" && <section><div className="page-heading"><p className="kicker">ON THIS DEVICE</p><h1>Your watchlist.</h1><p>Stored on this device only. Hunt does not send notifications.</p></div><div className="cards">{watchlist.map((deal) => <DealCard key={deal.offer.offer_id} deal={deal} saved onToggle={() => toggle(deal)} snapshot />)}</div>{!watchlist.length && <p className="empty">No saved deals on this device.</p>}</section>}
+    </main>
+    <footer><Link href="/" className="wordmark"><span className="mark">h</span> hunt</Link><p>Voucher evidence and estimates are not checkout guarantees. Cashback is separate from payment due.</p></footer>
+  </div>;
 }
-function DealCard({
-  deal,
-  number,
-  saved,
-  onSave,
-  snapshot = false,
-}: {
-  deal: Deal;
-  number: number;
-  saved: boolean;
-  onSave: () => void;
-  snapshot?: boolean;
-}) {
+function UpcomingWidget({ data, includeSynthetic, onOptIn }: { data: UpcomingResponse | null; includeSynthetic: boolean; onOptIn: (enabled: boolean) => void }) {
+  return <section className="panel upcoming" aria-labelledby="upcoming-title"><div className="panel-head"><div><p className="kicker">VOUCHER WINDOWS</p><h2 id="upcoming-title">Upcoming deals</h2></div><label className="opt-in"><input type="checkbox" checked={includeSynthetic} onChange={(e) => onOptIn(e.target.checked)} /> Include synthetic data</label></div><p className="notice">{data?.notice || "Windows appear only when present in supplied voucher data. No countdown, price or availability is implied."}</p>{data?.deals.map((deal) => <article className="upcoming-row" key={`${deal.platform}:${deal.code}`}><div className="upcoming-title"><span className="tag">{deal.synthetic ? "SYNTHETIC · DEMO" : deal.evidence_source.toUpperCase()}</span><h3>{deal.code}</h3><p>{deal.platform}{deal.seller ? ` · ${deal.seller}` : ""}</p></div><dl><div><dt>Window</dt><dd>{new Date(deal.starts_at).toLocaleString()} – {new Date(deal.expires_at).toLocaleString()}</dd></div><div><dt>Discount</dt><dd>{deal.percent ? `${deal.percent}%` : money(deal.discount_vnd)}{deal.cap_vnd !== null ? ` · cap ${money(deal.cap_vnd)}` : ""}</dd></div><div><dt>Minimum spend</dt><dd>{money(deal.min_spend_vnd)}</dd></div><div><dt>Checkout payment</dt><dd>{deal.checkout_payment_method || "Not specified"}</dd></div><div><dt>Cashback · separate</dt><dd>{money(deal.cashback_vnd)}</dd></div><div><dt>Eligibility</dt><dd>{deal.eligibility.length ? deal.eligibility.join("; ") : "No additional conditions supplied"}</dd></div><div><dt>Evidence · as of</dt><dd>{deal.evidence_url ? <a href={deal.evidence_url} target="_blank" rel="noreferrer">{deal.evidence_source} ↗</a> : deal.evidence_source} · {new Date(deal.as_of).toLocaleString()}</dd></div></dl></article>)}{data && data.deals.length === 0 && <p className="empty">No upcoming voucher windows are present in the supplied catalog.</p>}</section>;
+}
+function DealCard({ deal, saved, onToggle, snapshot = false }: { deal: Deal; saved: boolean; onToggle: () => void; snapshot?: boolean }) {
   const offer = deal.offer;
-  return (
-    <article className="deal-ticket">
-      <div className="deal-ticket-top">
-        <span>ADMIT ONE GOOD FIND / {String(number).padStart(3, "0")}</span>
-        <button
-          onClick={onSave}
-          aria-label={saved ? "Remove saved deal" : "Save deal"}
-          aria-pressed={saved}
-        >
-          <Heart filled={saved} />
-        </button>
-      </div>
-      <div className="deal-body">
-        <div className="deal-tags">
-          <span
-            className={offer.source_tier === "synthetic" ? "tag demo" : "tag"}
-          >
-            {offer.source_tier === "synthetic"
-              ? "SYNTHETIC DEMO"
-              : offer.source_tier.toUpperCase()}
-          </span>
-          <span className="tag">
-            {deal.eligible ? "ELIGIBLE ESTIMATE" : "CONDITIONS APPLY"}
-          </span>
-        </div>
-        <h3>{offer.title}</h3>
-        <p className="seller">
-          {offer.seller}{" "}
-          <span>
-            <Arrow />
-          </span>{" "}
-          {offer.platform}
-        </p>
-        <div className="deal-price">
-          <small>ESTIMATED CHECKOUT</small>
-          <strong>{currency(deal.checkout_vnd)}</strong>
-        </div>
-        {deal.within_target !== null && (
-          <span
-            className={
-              "target-note" + (deal.within_target ? "" : " over-target")
-            }
-          >
-            {deal.within_target ? "Within your target" : "Above your target"}
-          </span>
-        )}
-        {snapshot && (
-          <p className="warning">
-            Saved snapshot · Recheck the current listing and voucher
-            availability.
-          </p>
-        )}
-        <details>
-          <summary>
-            Show me the math <span>+</span>
-          </summary>
-          <dl>
-            <div>
-              <dt>Item price</dt>
-              <dd>{currency(offer.price_vnd)}</dd>
-            </div>
-            {deal.discounts.map((d) => (
-              <div key={d.code}>
-                <dt>
-                  {d.code} · {d.scope}
-                </dt>
-                <dd>−{currency(d.discount_vnd)}</dd>
-              </div>
-            ))}
-            <div>
-              <dt>Delivery after vouchers</dt>
-              <dd>{currency(deal.shipping_after_discount_vnd)}</dd>
-            </div>
-            <div className="total">
-              <dt>Payable estimate</dt>
-              <dd>{currency(deal.checkout_vnd)}</dd>
-            </div>
-            <div>
-              <dt>Future cashback · separate</dt>
-              <dd>{currency(deal.cashback_vnd)}</dd>
-            </div>
-          </dl>
-          <p className="fine-print">
-            Variant: {offer.product_key}
-            <br />
-            Observed: {new Date(offer.observed_at).toLocaleString()}
-            <br />
-            Source: {offer.source}
-          </p>
-          <p className="fine-print">
-            {deal.lowest_observed_item_price_vnd !== null
-              ? `Prior item-price low: ${currency(deal.lowest_observed_item_price_vnd)} across ${deal.price_history_days} observed dates. Gaps may exist; before vouchers.`
-              : "No prior item-price history. A recent-low claim cannot be verified."}
-          </p>
-        </details>
-        {deal.conditions.length > 0 && (
-          <ul className="conditions">
-            {deal.conditions.map((c) => (
-              <li key={c}>{c}</li>
-            ))}
-          </ul>
-        )}
-      </div>
-      <div className="deal-tear" />
-      <div className="deal-ticket-bottom">
-        <span>
-          {deal.voucher_codes.length
-            ? deal.voucher_codes.length +
-              " CODE" +
-              (deal.voucher_codes.length === 1 ? "" : "S") +
-              " IN THE MIX"
-            : "NO VOUCHER REQUIRED"}
-        </span>
-        {safeUrl(offer.url) ? (
-          <a href={offer.url!} target="_blank" rel="noopener noreferrer">
-            Check listing <Arrow />
-          </a>
-        ) : (
-          <span className="fine-print">
-            {offer.source_tier === "synthetic"
-              ? "DEMO / NO LIVE LISTING"
-              : "NO LISTING LINK"}
-          </span>
-        )}
-      </div>
-    </article>
-  );
+  return <article className="deal-card"><div className="card-top"><span className="tag">{offer.source_tier === "synthetic" ? "SYNTHETIC · DEMO" : offer.source_tier.toUpperCase()}</span><button className="save-button" onClick={onToggle} aria-pressed={saved}>{saved ? "Saved" : "Save"}</button></div><h2>{offer.title}</h2><p>{offer.seller} · {offer.platform}</p><p className="price">{deal.checkout_vnd === null ? "Checkout total unknown" : money(deal.checkout_vnd)}</p><p className="muted">Estimated checkout · confirm at purchase</p>{snapshot && <p className="notice">Saved snapshot. Recheck listing and voucher evidence before purchase.</p>}<details><summary>Evidence and breakdown</summary><dl><div><dt>Item price</dt><dd>{money(offer.price_vnd)}</dd></div>{deal.discounts.map((d) => <div key={d.code}><dt>{d.code} · {d.scope}</dt><dd>−{money(d.discount_vnd)}</dd></div>)}<div><dt>Delivery after vouchers</dt><dd>{money(deal.shipping_after_discount_vnd)}</dd></div><div><dt>Payable estimate</dt><dd>{money(deal.checkout_vnd)}</dd></div><div><dt>Cashback · separate</dt><dd>{money(deal.cashback_vnd)}</dd></div></dl><p>Variant: {offer.product_key}</p><p>Observed: {new Date(offer.observed_at).toLocaleString()} · {offer.source}</p>{offer.url && <a href={offer.url} target="_blank" rel="noreferrer">Listing source ↗</a>}</details>{deal.conditions.length > 0 && <ul>{deal.conditions.map((condition) => <li key={condition}>{condition}</li>)}</ul>}</article>;
 }

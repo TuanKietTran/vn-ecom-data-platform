@@ -1,4 +1,4 @@
-"""Framework-free value objects for ShopLens."""
+"""Framework-free value objects for Hunt."""
 
 from dataclasses import dataclass
 from enum import StrEnum

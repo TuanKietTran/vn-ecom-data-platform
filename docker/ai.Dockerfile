@@ -1,4 +1,4 @@
-# Minimal runtime image for the optional ShopLens AI service.
+# Minimal runtime image for the optional Hunt AI service.
 FROM python:3.12-slim-bookworm
 
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1

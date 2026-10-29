@@ -133,7 +133,7 @@ services:
     depends_on: [spark-master]
     profiles: [core]
 
-  # ── ShopLens AI API (TIER=ai) ─────────────────────────────────────────
+  # ── Hunt AI API (TIER=ai) ─────────────────────────────────────────────
   ai-api:
     image: vnecom/ai:local
     build: { context: .., dockerfile: docker/ai.Dockerfile }

@@ -1,4 +1,4 @@
-"""Framework-free ShopLens domain entities and generation value objects."""
+"""Framework-free Hunt domain entities and generation value objects."""
 
 from dataclasses import dataclass, field
 from datetime import datetime

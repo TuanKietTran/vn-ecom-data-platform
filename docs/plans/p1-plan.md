@@ -1,4 +1,4 @@
-# ShopLens P1 implementation plan
+# Hunt P1 implementation plan
 
 ## Scope and integration findings
 P1 makes the existing optional `ai` extra usable offline and adds an opt-in AI runtime; it must not make core/lite imports or CI depend on AI packages or credentials. P0 already separates `domain`, `application`, `infrastructure`, `interfaces`, `pipelines`, and `agents` under `src/vnecom/ai`; `domain/ports.py` has `ModelPort`, `EmbeddingPort`, and `ProductRepository`, and `application/use_cases.py` contains the application boundary. Preserve lazy AI imports in `src/vnecom/ai/__init__.py` and CLI integration in `src/vnecom/cli.py`.

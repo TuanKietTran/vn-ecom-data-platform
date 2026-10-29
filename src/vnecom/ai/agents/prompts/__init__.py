@@ -1,1 +1,1 @@
-"""Versioned prompt assets for ShopLens agents."""
+"""Versioned prompt assets for Hunt agents."""

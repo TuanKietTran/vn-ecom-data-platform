@@ -19,7 +19,7 @@ import typer
 from vnecom.settings import REPO_ROOT, get_settings
 
 app = typer.Typer(no_args_is_help=True, add_completion=False, help=__doc__)
-ai_app = typer.Typer(no_args_is_help=True, add_completion=False, help="ShopLens AI capabilities.")
+ai_app = typer.Typer(no_args_is_help=True, add_completion=False, help="Hunt AI capabilities.")
 app.add_typer(ai_app, name="ai")
 DBT_DIR = REPO_ROOT / "transform" / "dbt"
 
@@ -77,7 +77,7 @@ def ai_embed() -> None:
 
 @ai_app.command("serve")
 def ai_serve(host: str = "127.0.0.1", port: int = 8000) -> None:
-    """Start the ShopLens API (P1 implementation)."""
+    """Start the Hunt API."""
     _require_ai()
     import uvicorn
 
@@ -92,7 +92,7 @@ def ai_serve(host: str = "127.0.0.1", port: int = 8000) -> None:
 
 @ai_app.command("grpc")
 def ai_grpc() -> None:
-    """Start the ShopLens gRPC service (P1 implementation)."""
+    """Start the Hunt gRPC service."""
     typer.echo("AI gRPC service is not implemented yet.")
 
 

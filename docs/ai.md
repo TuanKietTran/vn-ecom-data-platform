@@ -1,6 +1,6 @@
-# AI layer (ShopLens)
+# Hunt AI layer
 
-The AI package is an optional layer in `src/vnecom/ai`. ShopLens provides browser chat, fixed analytics, lexical product retrieval, structured Deal hunt and an OpenAI-compatible adapter. See [Deal hunting and pipeline coverage](deal-hunting.md) for voucher arithmetic, historical ingestion, quality gates, reconciliation, indexing and offline evaluation. Semantic product retrieval, cross-platform matching, live-model evaluation and gRPC remain separate work.
+The AI package is an optional layer in `src/vnecom/ai`. Hunt provides browser chat, fixed analytics, lexical product retrieval, structured Deal hunt and an OpenAI-compatible adapter. See [Deal hunting and pipeline coverage](deal-hunting.md) for voucher arithmetic, historical ingestion, quality gates, reconciliation, indexing and offline evaluation. Semantic product retrieval, cross-platform matching, live-model evaluation and gRPC remain separate work.
 
 ## Run platform chat
 
@@ -45,12 +45,12 @@ Run `.venv/bin/python -m pytest -q tests/ai/test_chat_api.py` for API/provider-c
 
 ```mermaid
 flowchart LR
-  L[Bronze / Silver / Gold lake] -->|catalog and analytics context| AI[ShopLens AI layer]
+  L[Bronze / Silver / Gold lake] -->|catalog and analytics context| AI[Hunt AI layer]
   AI -->|grounded answers and product matches| API[HTTP API / gRPC]
   Client[Web or CLI client] --> API
 ```
 
-> **Demo:** [ShopLens demo GIF — placeholder]
+> **Demo:** [Hunt demo GIF — placeholder]
 
 Run the current P0 text-generation path with one command after setting `VNECOM_AI_API_KEY`:
 
