@@ -1,3 +1,4 @@
+import re
 import sys
 from types import SimpleNamespace
 
@@ -27,10 +28,19 @@ def test_build_dataset_explicit_allowlist_and_redaction(tmp_path, monkeypatch):
 def test_publish_hf_requires_confirmation_and_token(monkeypatch):
     monkeypatch.delenv("HF_TOKEN", raising=False)
     monkeypatch.setattr(cli, "get_settings", lambda: object())
+    publish_calls = []
+    monkeypatch.setattr(
+        "vnecom.publish_hf.publish",
+        lambda *args, **kwargs: publish_calls.append((args, kwargs)),
+    )
     result = CliRunner().invoke(cli.app, ["publish-hf", "me/data"])
     assert result.exit_code != 0
     captured_output = result.output + getattr(result, "stderr", "")
+    captured_output = re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", captured_output)
+    captured_output = re.sub(r"[\u2500-\u257f]", " ", captured_output)
+    captured_output = " ".join(captured_output.split())
     assert "upload requires --yes and HF_TOKEN" in captured_output
+    assert publish_calls == []
 
 
 def test_dry_run_skips_token_and_upload(tmp_path, monkeypatch):
