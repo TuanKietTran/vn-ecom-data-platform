@@ -52,12 +52,29 @@ def manifest_for(path: Path, *, states: list | None = None) -> dict:
                 "pixel_dimensions": [2, 3],
                 "captured_at_utc": "2026-10-29T00:00:00Z",
                 "source_files": [
-                    {"path": "view.tsx", "sha256": hashlib.sha256(source.read_bytes()).hexdigest()}
+                    {
+                        "path": "view.tsx",
+                        "sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+                        "git_blob_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+                        "revision": "abc123",
+                    }
+                ],
+                "server_mode": "next dev (development server)",
+                "known_artifacts": [
+                    "Next.js dev indicator (round N badge, bottom-left) is dev tooling, not part of the Hunt UI"
                 ],
             }
         ],
         "transitions": [],
-        "coverage": {"web": {"status": "CAPTURED"}},
+        "coverage": {
+            "web": {
+                "status": "CAPTURED",
+                "server_mode": "next dev (development server)",
+                "known_artifacts": [
+                    "Next.js dev indicator (round N badge, bottom-left) is dev tooling, not part of the Hunt UI"
+                ],
+            }
+        },
     }
 
 
@@ -76,10 +93,22 @@ def test_exports_real_web_capture_and_marks_native_unverified(tmp_path: Path) ->
     assert result.returncode == 0, result.stderr
     page = (tmp_path / "board.html").read_text(encoding="utf-8")
     assert "web-home" in page and "NOT CAPTURED/UNVERIFIED" in page
-    assert "no Android SDK/emulator" in page and "no Xcode" in page
+    assert "no Android SDK/emulator; unavailable old runtime captures" in page
+    assert "no Xcode; unavailable old runtime captures" in page
     assert "Original capture web-home" in page
     assert "No captured frames" in page
     assert page.count('<article class="frame"') == 1
+    assert page.count("next dev (development server)") >= 3
+    assert (
+        page.count(
+            "Next.js dev indicator (round N badge, bottom-left) is dev tooling, not part of the Hunt UI"
+        )
+        >= 3
+    )
+    assert "Open original-size 1:1 pannable inspector" in page
+    assert "Known artifacts / blockers" in page
+    assert "Git blob SHA256" in page
+    assert "Observed UI confirmation" in page
 
 
 def test_missing_capture_png_fails_closed(tmp_path: Path) -> None:

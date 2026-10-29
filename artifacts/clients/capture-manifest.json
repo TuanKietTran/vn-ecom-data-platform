@@ -1,0 +1,342 @@
+{
+  "schema_version": 1,
+  "worktree_revision": "801074b239760ced173ddebd62cce8635d59dbd8",
+  "dirty": true,
+  "build_id": "dev@801074b239760ced173ddebd62cce8635d59dbd8",
+  "captured_at_utc": "2026-10-29T15:59:34Z",
+  "states": [
+    {
+      "id": "web-home-desktop",
+      "platform": "web",
+      "route": "/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "png": "captures/web-home-desktop.png",
+      "sha256": "a05f82874921762867917a00fd718e57687f2472cb3df0b07aa65ba4941efea1",
+      "size_bytes": 42524,
+      "pixel_dimensions": [
+        1440,
+        900
+      ],
+      "captured_at_utc": "2026-10-29T15:58:55Z",
+      "source_files": [
+        {
+          "path": "../../apps/web/app/page.tsx",
+          "sha256": "afe52bbc718dbf77164b6a77f3c3871f72475e568964d8a632fc510432274afc",
+          "git_blob_sha256": "fcc0522ef3a2a24a685a25cab0b18af742b4209c9a14980dcbe4336a5f6f2bc0",
+          "revision": "801074b239760ced173ddebd62cce8635d59dbd8"
+        },
+        {
+          "path": "../../apps/web/components/workspace.tsx",
+          "sha256": "9d20d4f99546bd4f486d1377cf7f15dddc6ddec648f083726b2c5e64e8a8c6a5",
+          "git_blob_sha256": "9d20d4f99546bd4f486d1377cf7f15dddc6ddec648f083726b2c5e64e8a8c6a5",
+          "revision": "801074b239760ced173ddebd62cce8635d59dbd8"
+        },
+        {
+          "path": "../../apps/web/app/globals.css",
+          "sha256": "f475130c4010c1d123c20114587430bc17a91a6ba46543690e764e9d4d332bb1",
+          "git_blob_sha256": "f475130c4010c1d123c20114587430bc17a91a6ba46543690e764e9d4d332bb1",
+          "revision": "801074b239760ced173ddebd62cce8635d59dbd8"
+        }
+      ],
+      "capture_origin": "D:/projects/vn-ecom-ctl/m2/haiku/pwb-home/out/tab1-screenshot-2026-10-29T15-58-55.png",
+      "capture_build_id": "dev@801074b239760ced173ddebd62cce8635d59dbd8",
+      "capture_approval": "Commander visually inspected this original screenshot and confirmed Hunt without the hero.",
+      "server_mode": "next dev (development server)",
+      "known_artifacts": [
+        "Next.js dev indicator (round N badge, bottom-left) is dev tooling, not part of the Hunt UI"
+      ],
+      "observed_confirmation": "Home route; chat precedes Upcoming deals; no hero/CTA; synthetic opt-in off."
+    },
+    {
+      "id": "web-hunt-desktop",
+      "platform": "web",
+      "route": "/hunt",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "png": "captures/web-hunt-desktop.png",
+      "sha256": "78fbfbf9485c01efd5bf3902e9d631024ca34358525a8697ec1c6b755dfb0ccd",
+      "size_bytes": 31785,
+      "pixel_dimensions": [
+        1440,
+        900
+      ],
+      "captured_at_utc": "2026-10-29T15:59:03Z",
+      "source_files": [
+        {
+          "path": "../../apps/web/app/hunt/page.tsx",
+          "sha256": "82b743e89e682b4ab4288469a073b41a5438c386ccbfbd138cd8a612162659f5",
+          "git_blob_sha256": "82b743e89e682b4ab4288469a073b41a5438c386ccbfbd138cd8a612162659f5",
+          "revision": "801074b239760ced173ddebd62cce8635d59dbd8"
+        },
+        {
+          "path": "../../apps/web/components/workspace.tsx",
+          "sha256": "9d20d4f99546bd4f486d1377cf7f15dddc6ddec648f083726b2c5e64e8a8c6a5",
+          "git_blob_sha256": "9d20d4f99546bd4f486d1377cf7f15dddc6ddec648f083726b2c5e64e8a8c6a5",
+          "revision": "801074b239760ced173ddebd62cce8635d59dbd8"
+        },
+        {
+          "path": "../../apps/web/app/globals.css",
+          "sha256": "f475130c4010c1d123c20114587430bc17a91a6ba46543690e764e9d4d332bb1",
+          "git_blob_sha256": "f475130c4010c1d123c20114587430bc17a91a6ba46543690e764e9d4d332bb1",
+          "revision": "801074b239760ced173ddebd62cce8635d59dbd8"
+        }
+      ],
+      "capture_origin": "D:/projects/vn-ecom-ctl/m2/haiku/pwb-home/out/tab1-screenshot-2026-10-29T15-59-03.png",
+      "capture_build_id": "dev@801074b239760ced173ddebd62cce8635d59dbd8",
+      "capture_approval": "Commander visually inspected this original screenshot and confirmed Hunt without the hero.",
+      "server_mode": "next dev (development server)",
+      "known_artifacts": [
+        "Next.js dev indicator (round N badge, bottom-left) is dev tooling, not part of the Hunt UI"
+      ],
+      "observed_confirmation": "/hunt route and Hunt title/navigation confirmed; no hero."
+    },
+    {
+      "id": "web-upcoming-synthetic-desktop",
+      "platform": "web",
+      "route": "/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "png": "captures/web-upcoming-synthetic-desktop.png",
+      "sha256": "e83a00225cca8778d14a480e111bb9cc86af3868b44648142e46bbb91a8b5ded",
+      "size_bytes": 56078,
+      "pixel_dimensions": [
+        1440,
+        900
+      ],
+      "captured_at_utc": "2026-10-29T15:59:16Z",
+      "source_files": [
+        {
+          "path": "../../apps/web/app/page.tsx",
+          "sha256": "afe52bbc718dbf77164b6a77f3c3871f72475e568964d8a632fc510432274afc",
+          "git_blob_sha256": "fcc0522ef3a2a24a685a25cab0b18af742b4209c9a14980dcbe4336a5f6f2bc0",
+          "revision": "801074b239760ced173ddebd62cce8635d59dbd8"
+        },
+        {
+          "path": "../../src/vnecom/ai/interfaces/api/__init__.py",
+          "sha256": "627430983d925cf7b79c8a918d7f406c51b19f05a6b3c00f3d7112775a76a841",
+          "git_blob_sha256": "636dd705bc46cbfeb41054eebc7265e82e07642190faa22859d503005587ae56",
+          "revision": "801074b239760ced173ddebd62cce8635d59dbd8"
+        },
+        {
+          "path": "../../src/vnecom/deals.py",
+          "sha256": "3ad6ccd2713725a5c56e54b0a228d558fcb2dee73318f2e03933afe1640e8434",
+          "git_blob_sha256": "6aaa608710d11b07eca376791cd159ec517f40b244610409b8f8dbaf201f24ac",
+          "revision": "801074b239760ced173ddebd62cce8635d59dbd8"
+        },
+        {
+          "path": "../../apps/web/components/workspace.tsx",
+          "sha256": "9d20d4f99546bd4f486d1377cf7f15dddc6ddec648f083726b2c5e64e8a8c6a5",
+          "git_blob_sha256": "9d20d4f99546bd4f486d1377cf7f15dddc6ddec648f083726b2c5e64e8a8c6a5",
+          "revision": "801074b239760ced173ddebd62cce8635d59dbd8"
+        },
+        {
+          "path": "../../apps/web/app/globals.css",
+          "sha256": "f475130c4010c1d123c20114587430bc17a91a6ba46543690e764e9d4d332bb1",
+          "git_blob_sha256": "f475130c4010c1d123c20114587430bc17a91a6ba46543690e764e9d4d332bb1",
+          "revision": "801074b239760ced173ddebd62cce8635d59dbd8"
+        }
+      ],
+      "capture_origin": "D:/projects/vn-ecom-ctl/m2/haiku/pwb-home/out/tab1-screenshot-2026-10-29T15-59-16.png",
+      "capture_build_id": "dev@801074b239760ced173ddebd62cce8635d59dbd8",
+      "capture_approval": "Commander visually inspected this original screenshot and confirmed Hunt without the hero.",
+      "server_mode": "next dev (development server)",
+      "known_artifacts": [
+        "Next.js dev indicator (round N badge, bottom-left) is dev tooling, not part of the Hunt UI"
+      ],
+      "observed_confirmation": "Include synthetic data is checked; SYNTHETIC · DEMO and SYNTHETIC-VOUCHER-2099 are visible; supplied window/cap/minimum spend/payment/cashback separate/eligibility/evidence-as-of fields shown; no price, availability or countdown claim."
+    },
+    {
+      "id": "web-home-phone",
+      "platform": "web",
+      "route": "/",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "png": "captures/web-home-phone.png",
+      "sha256": "851793f389e7b25f2b28f45ce618a2d890f271498cc35503c004ed43e1621043",
+      "size_bytes": 33689,
+      "pixel_dimensions": [
+        390,
+        844
+      ],
+      "captured_at_utc": "2026-10-29T15:59:22Z",
+      "source_files": [
+        {
+          "path": "../../apps/web/app/page.tsx",
+          "sha256": "afe52bbc718dbf77164b6a77f3c3871f72475e568964d8a632fc510432274afc",
+          "git_blob_sha256": "fcc0522ef3a2a24a685a25cab0b18af742b4209c9a14980dcbe4336a5f6f2bc0",
+          "revision": "801074b239760ced173ddebd62cce8635d59dbd8"
+        },
+        {
+          "path": "../../apps/web/components/workspace.tsx",
+          "sha256": "9d20d4f99546bd4f486d1377cf7f15dddc6ddec648f083726b2c5e64e8a8c6a5",
+          "git_blob_sha256": "9d20d4f99546bd4f486d1377cf7f15dddc6ddec648f083726b2c5e64e8a8c6a5",
+          "revision": "801074b239760ced173ddebd62cce8635d59dbd8"
+        },
+        {
+          "path": "../../apps/web/app/globals.css",
+          "sha256": "f475130c4010c1d123c20114587430bc17a91a6ba46543690e764e9d4d332bb1",
+          "git_blob_sha256": "f475130c4010c1d123c20114587430bc17a91a6ba46543690e764e9d4d332bb1",
+          "revision": "801074b239760ced173ddebd62cce8635d59dbd8"
+        }
+      ],
+      "capture_origin": "D:/projects/vn-ecom-ctl/m2/haiku/pwb-home/out/tab1-screenshot-2026-10-29T15-59-22.png",
+      "capture_build_id": "dev@801074b239760ced173ddebd62cce8635d59dbd8",
+      "capture_approval": "Commander visually inspected this original screenshot and confirmed Hunt without the hero.",
+      "server_mode": "next dev (development server)",
+      "known_artifacts": [
+        "Next.js dev indicator (round N badge, bottom-left) is dev tooling, not part of the Hunt UI"
+      ],
+      "observed_confirmation": "Home at 390x844; chat precedes Upcoming deals; no hero/CTA; synthetic opt-in off."
+    },
+    {
+      "id": "web-discover-phone",
+      "platform": "web",
+      "route": "/discover",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "png": "captures/web-discover-phone.png",
+      "sha256": "f6e9ce64559dd5183d857f7b143edbe9fa8c347c21f1f48300f700eeaff70c0c",
+      "size_bytes": 27550,
+      "pixel_dimensions": [
+        390,
+        844
+      ],
+      "captured_at_utc": "2026-10-29T15:59:27Z",
+      "source_files": [
+        {
+          "path": "../../apps/web/app/discover/page.tsx",
+          "sha256": "e9589ebc12ebb262f329f5132058011d28983ae253933e72898adfa3db8f5d3b",
+          "git_blob_sha256": "c3604393ec939066be48db53abf65fa850f826bcce8de1b8e3acb44a962dfa5c",
+          "revision": "801074b239760ced173ddebd62cce8635d59dbd8"
+        },
+        {
+          "path": "../../apps/web/components/workspace.tsx",
+          "sha256": "9d20d4f99546bd4f486d1377cf7f15dddc6ddec648f083726b2c5e64e8a8c6a5",
+          "git_blob_sha256": "9d20d4f99546bd4f486d1377cf7f15dddc6ddec648f083726b2c5e64e8a8c6a5",
+          "revision": "801074b239760ced173ddebd62cce8635d59dbd8"
+        },
+        {
+          "path": "../../apps/web/app/globals.css",
+          "sha256": "f475130c4010c1d123c20114587430bc17a91a6ba46543690e764e9d4d332bb1",
+          "git_blob_sha256": "f475130c4010c1d123c20114587430bc17a91a6ba46543690e764e9d4d332bb1",
+          "revision": "801074b239760ced173ddebd62cce8635d59dbd8"
+        }
+      ],
+      "capture_origin": "D:/projects/vn-ecom-ctl/m2/haiku/pwb-home/out/tab1-screenshot-2026-10-29T15-59-27.png",
+      "capture_build_id": "dev@801074b239760ced173ddebd62cce8635d59dbd8",
+      "capture_approval": "Commander visually inspected this original screenshot and confirmed Hunt without the hero.",
+      "server_mode": "next dev (development server)",
+      "known_artifacts": [
+        "Next.js dev indicator (round N badge, bottom-left) is dev tooling, not part of the Hunt UI"
+      ],
+      "observed_confirmation": "/discover route reached by the visible Discover navigation control."
+    },
+    {
+      "id": "web-saved-phone",
+      "platform": "web",
+      "route": "/saved",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "png": "captures/web-saved-phone.png",
+      "sha256": "a905ed514e1869a14e06151f65469b2c1a1dac79c6a3698c079896f6e864a45f",
+      "size_bytes": 21939,
+      "pixel_dimensions": [
+        390,
+        844
+      ],
+      "captured_at_utc": "2026-10-29T15:59:34Z",
+      "source_files": [
+        {
+          "path": "../../apps/web/app/saved/page.tsx",
+          "sha256": "72f8a4ccd62344eebc085395189168795a7fb06bfdaf7417db10aaa228bce31b",
+          "git_blob_sha256": "c8855a564ee5f2b71bc59f62c2df065c1c03d7eef4e20c088ad33111462ccd62",
+          "revision": "801074b239760ced173ddebd62cce8635d59dbd8"
+        },
+        {
+          "path": "../../apps/web/components/workspace.tsx",
+          "sha256": "9d20d4f99546bd4f486d1377cf7f15dddc6ddec648f083726b2c5e64e8a8c6a5",
+          "git_blob_sha256": "9d20d4f99546bd4f486d1377cf7f15dddc6ddec648f083726b2c5e64e8a8c6a5",
+          "revision": "801074b239760ced173ddebd62cce8635d59dbd8"
+        },
+        {
+          "path": "../../apps/web/app/globals.css",
+          "sha256": "f475130c4010c1d123c20114587430bc17a91a6ba46543690e764e9d4d332bb1",
+          "git_blob_sha256": "f475130c4010c1d123c20114587430bc17a91a6ba46543690e764e9d4d332bb1",
+          "revision": "801074b239760ced173ddebd62cce8635d59dbd8"
+        }
+      ],
+      "capture_origin": "D:/projects/vn-ecom-ctl/m2/haiku/pwb-home/out/tab1-screenshot-2026-10-29T15-59-34.png",
+      "capture_build_id": "dev@801074b239760ced173ddebd62cce8635d59dbd8",
+      "capture_approval": "Commander visually inspected this original screenshot and confirmed Hunt without the hero.",
+      "server_mode": "next dev (development server)",
+      "known_artifacts": [
+        "Next.js dev indicator (round N badge, bottom-left) is dev tooling, not part of the Hunt UI"
+      ],
+      "observed_confirmation": "/saved route reached by the visible Saved navigation control."
+    }
+  ],
+  "transitions": [
+    {
+      "from": "web-home-desktop",
+      "to": "web-hunt-desktop",
+      "action": "Clicked Hunt link ref_2.",
+      "evidence": "Haiku final report: click tool reported route /; follow-up DOM read showed /hunt."
+    },
+    {
+      "from": "web-hunt-desktop",
+      "to": "web-upcoming-synthetic-desktop",
+      "action": "Clicked Home ref_5, then clicked synthetic checkbox ref_13 off→on.",
+      "evidence": "Haiku final report: Home click tool reported /hunt; follow-up DOM read showed /. Checkbox click kept route /; Commander visually accepted SYNTHETIC · DEMO / SYNTHETIC-VOUCHER-2099."
+    },
+    {
+      "from": "web-upcoming-synthetic-desktop",
+      "to": "web-home-phone",
+      "action": "Resized viewport 1440x900→390x844 and clicked synthetic checkbox ref_13 on→off on /.",
+      "evidence": "Haiku final report confirms the viewport resize and checkbox off transition on route /. Destination screenshot is 390x844."
+    },
+    {
+      "from": "web-home-phone",
+      "to": "web-discover-phone",
+      "action": "Clicked Discover ref_9.",
+      "evidence": "Haiku final report: follow-up route read showed /discover."
+    },
+    {
+      "from": "web-discover-phone",
+      "to": "web-saved-phone",
+      "action": "Clicked Saved ref_15.",
+      "evidence": "Haiku final report: click tool reported /discover; follow-up DOM read showed /saved."
+    }
+  ],
+  "transition_evidence_status": "Five state edges use exact click refs, tool route outputs and follow-up DOM reads from the Haiku final report; none cite plan steps or infer routes.",
+  "coverage": {
+    "web": {
+      "status": "CAPTURED — six approved original states; Next.js development server",
+      "server_mode": "next dev (development server)",
+      "known_artifacts": [
+        "Next.js dev indicator (round N badge, bottom-left) is dev tooling, not part of the Hunt UI"
+      ],
+      "transition_evidence_status": "Exact click refs and DOM confirmations recorded from the Haiku final report."
+    },
+    "android": {
+      "status": "NOT CAPTURED/UNVERIFIED",
+      "blocker": "no Android SDK/emulator; unavailable old runtime captures"
+    },
+    "ios": {
+      "status": "NOT CAPTURED/UNVERIFIED",
+      "blocker": "no Xcode; unavailable old runtime captures"
+    }
+  }
+}
