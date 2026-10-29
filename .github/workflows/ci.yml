@@ -16,7 +16,7 @@ jobs:
         with: { python-version: "3.12", cache: pip }
       - run: pip install -e ".[lite]"
       - run: ruff check . && ruff format --check .
-      - run: pytest -q -m "not spark"
+      - run: pytest -q -m "not spark" --ignore=tests/ai
 
   ai:
     runs-on: ubuntu-latest
@@ -24,9 +24,16 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.12", cache: pip }
-      - run: pip install -e ".[ai,dev]"
+      - run: pip install -e ".[ai,dbt,dagster,dev]"
       - run: ruff check . && ruff format --check .
       - run: mypy src/vnecom/ai
+      - name: Compile dbt manifest for Dagster tests
+        run: |
+          mkdir -p "$RUNNER_TEMP/warehouse" "$RUNNER_TEMP/lake"
+          export VNECOM_TABLE_FORMAT=parquet
+          export VNECOM_WAREHOUSE="$RUNNER_TEMP/warehouse/vnecom.duckdb"
+          export VNECOM_LAKE_URI="$RUNNER_TEMP/lake"
+          dbt compile --project-dir transform/dbt --profiles-dir transform/dbt --target lite
       - run: pytest -q tests/ai
 
   e2e:
