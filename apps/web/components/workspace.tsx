@@ -123,7 +123,6 @@ export function Workspace({ view }: { view: View }) {
     <main>
       {error && <p className="alert" role="alert">{error}</p>}
       {view === "home" && <>
-        <section className="home-intro"><p className="kicker">Good finds, grounded in evidence.</p><h1>Ask. Explore. Hunt.</h1><p>Compare what is actually in the supplied catalog. No invented prices or availability.</p><Link className="button primary" href="/hunt">Start a hunt</Link></section>
         <section className="panel chat-panel" aria-labelledby="chat-title"><div className="panel-head"><div><p className="kicker">CHAT</p><h2 id="chat-title">Ask about your shopping data</h2></div><span className="muted">Evidence-backed data mode</span></div>
           <div className="conversation" aria-live="polite">{messages.length === 0 && <p className="muted">Ask a question. Answers use available platform data, not live model output.</p>}{messages.map((message, index) => <article key={index} className="message"><b>{message.role === "user" ? "You" : "Hunt"}</b><p>{message.content}</p></article>)}{busy && <p role="status">Checking supplied data…</p>}</div>
           <form onSubmit={sendChat} className="chat-form"><label className="sr-only" htmlFor="chat-input">Message</label><input id="chat-input" value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Ask a question" maxLength={8000} /><button className="button primary" disabled={busy || !draft.trim()}>Send</button></form>

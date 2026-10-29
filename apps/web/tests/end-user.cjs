@@ -23,6 +23,14 @@ fs.mkdirSync(artifacts, { recursive: true });
   await page.goto(baseUrl);
   await page.getByRole("heading", { name: "Upcoming deals" }).waitFor();
   await page.getByText("No upcoming voucher windows are present", { exact: false }).waitFor();
+  assert.equal(await page.locator(".home-intro").count(), 0);
+  assert.equal(await page.locator("main > .chat-panel").count(), 1);
+  assert.equal(await page.locator("main > .upcoming").count(), 1);
+  assert.deepEqual(
+    await page.locator("main > section").evaluateAll((sections) => sections.map((section) => section.className)),
+    ["panel chat-panel", "panel upcoming"],
+  );
+  assert.equal(await page.getByRole("link", { name: "Start a hunt" }).count(), 0);
   await page.screenshot({
     path: path.join(artifacts, "web-hunt-desktop.png"),
     fullPage: true,
