@@ -10,8 +10,8 @@ import {
 } from "@nestjs/common";
 import type { NestExpressApplication } from "@nestjs/platform-express";
 import { NestFactory } from "@nestjs/core";
-import { chatRequest, dealRequest } from "@shoplens/contracts";
-const origin = new URL(process.env.PLATFORM_API_URL || "http://127.0.0.1:8000");
+import { chatRequest, dealRequest } from "@hunt/contracts";
+const origin = new URL(process.env.PLATFORM_API_URL || "http://127.0.0.1:8201");
 if (
   !["http:", "https:"].includes(origin.protocol) ||
   origin.username ||
@@ -48,10 +48,25 @@ async function upstream(path: string, body?: unknown) {
 @Controller()
 class ClientController {
   @Get("health") health() {
-    return { status: "ok", service: "shoplens-client-gateway" };
+    return { status: "ok", service: "hunt-client-gateway" };
   }
   @Get("status") status() {
     return upstream("/chat/status");
+  }
+  @Get("upcoming") upcoming(
+    @Query("include_synthetic") synthetic?: string,
+    @Query("limit") limit?: string,
+  ) {
+    const parsedLimit = limit === undefined ? 20 : Number(limit);
+    if (!Number.isInteger(parsedLimit) || parsedLimit < 1 || parsedLimit > 100)
+      throw new HttpException("Limit must be an integer from 1 to 100.", 400);
+    return upstream(
+      "/deals/upcoming?" +
+        new URLSearchParams({
+          include_synthetic: synthetic === "true" ? "true" : "false",
+          limit: String(parsedLimit),
+        }),
+    );
   }
   @Post("deals") deals(@Body() body: unknown) {
     const value = dealRequest.safeParse(body);
@@ -101,7 +116,7 @@ async function bootstrap() {
   });
   app.useBodyParser("json", { limit: "1mb" });
   await app.listen(
-    Number(process.env.GATEWAY_PORT || 4100),
+    Number(process.env.GATEWAY_PORT || 3202),
     process.env.GATEWAY_HOST || "127.0.0.1",
   );
 }

@@ -15,7 +15,7 @@ from vnecom.ai.application.use_cases import GenerateText
 from vnecom.ai.config import AISettings, get_ai_settings
 from vnecom.ai.domain.entities import GenerationRequest
 from vnecom.ai.infrastructure.openai_compatible import ContextLimitError, OpenAICompatibleModel
-from vnecom.deals import DealSearch, hunt
+from vnecom.deals import DealSearch, hunt, upcoming
 from vnecom.settings import Settings, get_settings
 
 MessageText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=8000)]
@@ -42,11 +42,11 @@ def create_app(
 ) -> Any:
     """Create the optional FastAPI application, importing its dependency lazily."""
     try:
-        from fastapi import FastAPI, HTTPException
+        from fastapi import FastAPI, HTTPException, Query
         from fastapi.responses import HTMLResponse
     except ImportError as exc:
         raise RuntimeError("Install API dependencies with pip install 'vnecom[ai]'") from exc
-    app = FastAPI(title="ShopLens API")
+    app = FastAPI(title="Hunt API")
     config = settings or get_ai_settings()
     platform = platform_settings or get_settings()
 
@@ -86,6 +86,24 @@ def create_app(
             "source": "gold.mart_platform_daily",
             "sources": platform.sources,
             "deals_available": True,
+        }
+
+    @app.get("/deals/upcoming")
+    def upcoming_deals(
+        include_synthetic: bool = False, limit: int = Query(default=20, ge=1, le=100)
+    ) -> dict[str, Any]:
+        from vnecom.deal_catalog import read_catalog
+
+        try:
+            catalog = read_catalog(platform)
+            values = upcoming(catalog, include_synthetic=include_synthetic, limit=limit)
+        except (OSError, ValueError) as exc:
+            raise HTTPException(503, "Deal evidence is unavailable or invalid; refresh the validated catalog") from exc
+        return {
+            "deals": [deal.model_dump(mode="json") for deal in values],
+            "synthetic_included": include_synthetic,
+            "notice": "Voucher windows are supplied evidence only; no price, availability, or countdown is implied. "
+            "Checkout payment and future cashback are separate.",
         }
 
     @app.post("/deals/search")
