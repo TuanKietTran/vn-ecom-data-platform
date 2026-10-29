@@ -1,4 +1,4 @@
-package vn.shoplens
+package vn.hunt
 
 import android.app.Application
 import android.content.Intent
@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
@@ -40,59 +42,59 @@ class MainActivity : ComponentActivity() {
             val colors =
                 if (androidx.compose.foundation.isSystemInDarkTheme())
                     darkColorScheme(
-                        primary = Color(0xFFFFB4A8),
-                        onPrimary = Color(0xFF650F04),
-                        primaryContainer = Color(0xFF8F200F),
-                        onPrimaryContainer = Color(0xFFFFDAD2),
-                        secondary = Color(0xFFBACD95),
-                        onSecondary = Color(0xFF26350D),
-                        secondaryContainer = Color(0xFF3B4B21),
-                        onSecondaryContainer = Color(0xFFD5E6AF),
-                        tertiary = Color(0xFFE4C18D),
-                        onTertiary = Color(0xFF402D0B),
-                        tertiaryContainer = Color(0xFF59441B),
-                        onTertiaryContainer = Color(0xFFFFDEAA),
-                        background = Color(0xFF1A1210),
-                        onBackground = Color(0xFFF3DED7),
-                        surface = Color(0xFF1A1210),
-                        onSurface = Color(0xFFF3DED7),
-                        surfaceVariant = Color(0xFF53433E),
-                        onSurfaceVariant = Color(0xFFD8C2BA),
-                        outline = Color(0xFFA08C85),
-                        surfaceContainer = Color(0xFF271E1B),
-                        surfaceContainerHigh = Color(0xFF312725),
-                        surfaceContainerHighest = Color(0xFF3D322F),
-                        surfaceContainerLow = Color(0xFF211815),
-                        surfaceContainerLowest = Color(0xFF140C0A),
+                        primary = Color(0xFF9BB9FF),
+                        onPrimary = Color(0xFF102B68),
+                        primaryContainer = Color(0xFF244FA8),
+                        onPrimaryContainer = Color(0xFFDCE6FF),
+                        secondary = Color(0xFFBFC9DB),
+                        onSecondary = Color(0xFF293548),
+                        secondaryContainer = Color(0xFF39465D),
+                        onSecondaryContainer = Color(0xFFE1E8F2),
+                        tertiary = Color(0xFF9BB9FF),
+                        onTertiary = Color(0xFF102B68),
+                        tertiaryContainer = Color(0xFF244FA8),
+                        onTertiaryContainer = Color(0xFFDCE6FF),
+                        background = Color(0xFF111827),
+                        onBackground = Color(0xFFF3F6FC),
+                        surface = Color(0xFF111827),
+                        onSurface = Color(0xFFF3F6FC),
+                        surfaceVariant = Color(0xFF42506A),
+                        onSurfaceVariant = Color(0xFFBBC7DB),
+                        outline = Color(0xFF8B98AE),
+                        surfaceContainer = Color(0xFF1B2433),
+                        surfaceContainerHigh = Color(0xFF243047),
+                        surfaceContainerHighest = Color(0xFF2E3A52),
+                        surfaceContainerLow = Color(0xFF161E2B),
+                        surfaceContainerLowest = Color(0xFF0C121C),
                     )
                 else
                     lightColorScheme(
-                        primary = Color(0xFFB83320),
+                        primary = Color(0xFF245BDB),
                         onPrimary = Color.White,
-                        primaryContainer = Color(0xFFFFDAD2),
-                        onPrimaryContainer = Color(0xFF3D0600),
-                        secondary = Color(0xFF526132),
+                        primaryContainer = Color(0xFFDCE6FF),
+                        onPrimaryContainer = Color(0xFF102B68),
+                        secondary = Color(0xFF4A5568),
                         onSecondary = Color.White,
-                        secondaryContainer = Color(0xFFD5E6AF),
-                        onSecondaryContainer = Color(0xFF131F00),
-                        tertiary = Color(0xFF735B31),
+                        secondaryContainer = Color(0xFFE1E8F2),
+                        onSecondaryContainer = Color(0xFF172033),
+                        tertiary = Color(0xFF245BDB),
                         onTertiary = Color.White,
-                        tertiaryContainer = Color(0xFFFFDEAA),
-                        onTertiaryContainer = Color(0xFF291800),
-                        background = Color(0xFFFFF8F3),
-                        onBackground = Color(0xFF221A17),
-                        surface = Color(0xFFFFF8F3),
-                        onSurface = Color(0xFF221A17),
-                        surfaceVariant = Color(0xFFF4DED7),
-                        onSurfaceVariant = Color(0xFF53433E),
-                        outline = Color(0xFF85736D),
-                        surfaceContainer = Color(0xFFF3E6DF),
-                        surfaceContainerHigh = Color(0xFFEDDFD6),
-                        surfaceContainerHighest = Color(0xFFE7D8CF),
-                        surfaceContainerLow = Color(0xFFFCF0E9),
+                        tertiaryContainer = Color(0xFFDCE6FF),
+                        onTertiaryContainer = Color(0xFF102B68),
+                        background = Color(0xFFFFFFFF),
+                        onBackground = Color(0xFF172033),
+                        surface = Color(0xFFFFFFFF),
+                        onSurface = Color(0xFF172033),
+                        surfaceVariant = Color(0xFFEAF0FA),
+                        onSurfaceVariant = Color(0xFF42506A),
+                        outline = Color(0xFF68758D),
+                        surfaceContainer = Color(0xFFE7EDF7),
+                        surfaceContainerHigh = Color(0xFFDEE6F2),
+                        surfaceContainerHighest = Color(0xFFD4DDEC),
+                        surfaceContainerLow = Color(0xFFF5F7FB),
                         surfaceContainerLowest = Color.White,
                     )
-            MaterialTheme(colorScheme = colors) { ShopApp() }
+            MaterialTheme(colorScheme = colors) { HuntClientApp() }
         }
     }
 }
@@ -114,15 +116,26 @@ fun observedTime(raw: String): String =
         }
         .getOrDefault(raw)
 
-class ShopModel(app: Application) : AndroidViewModel(app) {
-    private val preferences = app.getSharedPreferences("shoplens", 0)
-    var base by mutableStateOf(preferences.getString("gateway", "http://10.0.2.2:4100")!!)
+class HuntModel(app: Application) : AndroidViewModel(app) {
+    private val preferences = app.getSharedPreferences("hunt", 0)
+    var base by mutableStateOf(preferences.getString("gateway", "http://10.0.2.2:3202")!!)
         private set
 
     var status by mutableStateOf<Status?>(null)
         private set
 
     var deals by mutableStateOf<DealResults?>(null)
+        private set
+
+    var upcoming by mutableStateOf<UpcomingResults?>(null)
+        private set
+
+    var watchedUpcoming by mutableStateOf(
+        runCatching { wireJson.decodeFromString<List<UpcomingDeal>>(preferences.getString("watched_upcoming", "[]")!!) }.getOrDefault(emptyList())
+    )
+        private set
+
+    var loadingUpcoming by mutableStateOf(false)
         private set
 
     var products by mutableStateOf<List<Product>>(emptyList())
@@ -196,6 +209,27 @@ class ShopModel(app: Application) : AndroidViewModel(app) {
                 hunting = false
             }
         }
+    }
+
+    fun loadUpcoming(includeSynthetic: Boolean) {
+        viewModelScope.launch {
+            loadingUpcoming = true
+            error = null
+            try {
+                upcoming = wireJson.decodeFromString(
+                    Api(base).request("upcoming?include_synthetic=$includeSynthetic")
+                )
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                error = e.message ?: "Could not load supplied voucher windows"
+            } finally { loadingUpcoming = false }
+        }
+    }
+
+    fun toggleUpcoming(deal: UpcomingDeal) {
+        watchedUpcoming = if (watchedUpcoming.any { it.id == deal.id }) watchedUpcoming.filterNot { it.id == deal.id }
+            else (listOf(deal) + watchedUpcoming).take(100)
+        preferences.edit().putString("watched_upcoming", wireJson.encodeToString(watchedUpcoming)).apply()
     }
 
     fun discover(query: String, demo: Boolean) {
@@ -272,22 +306,23 @@ class ShopModel(app: Application) : AndroidViewModel(app) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ShopApp(model: ShopModel = viewModel()) {
+fun HuntClientApp(model: HuntModel = viewModel()) {
     var tab by remember { mutableIntStateOf(0) }
+    LaunchedEffect(Unit) { model.loadUpcoming(includeSynthetic = false) }
     var settings by remember { mutableStateOf(false) }
     var address by remember { mutableStateOf(model.base) }
-    val labels = listOf("Hunt", "Discover", "Ask", "Saved")
+    val labels = listOf("Home", "Hunt", "Discover", "Saved")
     val icons =
         listOf(
             Icons.Outlined.LocalActivity,
+            Icons.Outlined.LocalActivity,
             Icons.Outlined.Search,
-            Icons.Outlined.ChatBubbleOutline,
             Icons.Outlined.FavoriteBorder,
         )
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (tab == 2) "Ask ShopLens" else labels[tab]) },
+                title = { Text(if (tab == 0) "Hunt" else labels[tab]) },
                 actions = {
                     IconButton(
                         onClick = {
@@ -306,7 +341,7 @@ fun ShopApp(model: ShopModel = viewModel()) {
                     NavigationBarItem(
                         selected = tab == i,
                         onClick = { tab = i },
-                        icon = { Icon(icons[i], null) },
+                        icon = { if (i == 0) Text("h", style = MaterialTheme.typography.titleMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold) else Icon(icons[i], null) },
                         label = { Text(title) },
                     )
                 }
@@ -326,9 +361,9 @@ fun ShopApp(model: ShopModel = viewModel()) {
                     }
                 }
             when (tab) {
-                0 -> HuntScreen(model)
-                1 -> DiscoverScreen(model)
-                2 -> ChatScreen(model) { tab = 0 }
+                0 -> ChatScreen(model) { tab = 1 }
+                1 -> HuntScreen(model)
+                2 -> DiscoverScreen(model)
                 else ->
                     LazyColumn(
                         contentPadding = PaddingValues(16.dp),
@@ -336,17 +371,19 @@ fun ShopApp(model: ShopModel = viewModel()) {
                     ) {
                         item {
                             Text(
-                                "Saved snapshots. Recheck current price and voucher availability.",
+                                "Saved snapshots. Recheck current price and voucher availability. Upcoming watchlist stays on this device; no notifications are sent.",
                                 style = MaterialTheme.typography.bodySmall,
                             )
                         }
-                        if (model.saved.isEmpty())
+                        if (model.saved.isEmpty() && model.watchedUpcoming.isEmpty())
                             item {
                                 EmptyMessage(
                                     "Keep a good find close",
                                     "Save a deal from the hunt. Your shortlist stays on this device.",
                                 )
                             }
+                        if (model.watchedUpcoming.isNotEmpty()) item { Text("Watched voucher windows", style = MaterialTheme.typography.titleMedium) }
+                        items(model.watchedUpcoming, key = { it.id }) { UpcomingCard(it, model) }
                         items(model.saved, key = { it.offer.id }) { DealCard(it, model, true) }
                     }
             }
@@ -365,7 +402,7 @@ fun ShopApp(model: ShopModel = viewModel()) {
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                     )
                     Text(
-                        "Emulator: http://10.0.2.2:4100. A physical device needs a reachable gateway. Release builds require HTTPS. No model keys belong in this app.",
+                        "Emulator: http://10.0.2.2:3202. A physical device needs a reachable gateway. Release builds require HTTPS. No model keys belong in this app.",
                         style = MaterialTheme.typography.bodySmall,
                     )
                     Text(
@@ -390,8 +427,9 @@ fun ShopApp(model: ShopModel = viewModel()) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HuntScreen(model: ShopModel) {
+fun HuntScreen(model: HuntModel) {
     var query by remember { mutableStateOf("") }
+    var includeSyntheticUpcoming by remember { mutableStateOf(false) }
     var budget by remember { mutableStateOf("") }
     var demo by remember { mutableStateOf(false) }
     var showFilters by remember { mutableStateOf(false) }
@@ -418,6 +456,24 @@ fun HuntScreen(model: ShopModel) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+        item {
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("Upcoming voucher windows", style = MaterialTheme.typography.titleLarge)
+                    Row {
+                        Checkbox(includeSyntheticUpcoming, { includeSyntheticUpcoming = it })
+                        Text("Include synthetic examples", Modifier.padding(top = 12.dp), style = MaterialTheme.typography.bodyMedium)
+                    }
+                    OutlinedButton(onClick = { model.loadUpcoming(includeSyntheticUpcoming) }, enabled = !model.loadingUpcoming, modifier = Modifier.fillMaxWidth()) {
+                        if (model.loadingUpcoming) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                        else Text(if (model.upcoming == null) "Load supplied voucher windows" else "Refresh supplied windows")
+                    }
+                    Text(model.upcoming?.notice ?: "Supplied dates and terms only. No prices, availability, or countdowns are inferred.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    model.upcoming?.deals?.forEach { UpcomingCard(it, model) }
+                    if (model.upcoming?.deals?.isEmpty() == true) Text("No supplied future voucher windows.", style = MaterialTheme.typography.bodySmall)
+                }
+            }
         }
         item {
             OutlinedTextField(
@@ -519,7 +575,7 @@ fun HuntScreen(model: ShopModel) {
     if (showFilters)
         ModalBottomSheet(onDismissRequest = { showFilters = false }) {
             Column(
-                Modifier.padding(24.dp).fillMaxWidth(),
+                Modifier.padding(24.dp).fillMaxWidth().verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 Text("Voucher eligibility", style = MaterialTheme.typography.titleLarge)
@@ -542,7 +598,7 @@ fun HuntScreen(model: ShopModel) {
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Text("New-user eligibility", style = MaterialTheme.typography.labelLarge)
-                Row {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf("Unknown", "Eligible", "Not eligible").forEachIndexed { i, label ->
                         FilterChip(
                             selected = user == i,
@@ -565,7 +621,32 @@ fun HuntScreen(model: ShopModel) {
 }
 
 @Composable
-fun DealCard(deal: Deal, model: ShopModel, snapshot: Boolean = false) {
+fun UpcomingCard(deal: UpcomingDeal, model: HuntModel) {
+    val context = LocalContext.current
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+            Row {
+                Column(Modifier.weight(1f)) { Text(deal.code, style = MaterialTheme.typography.titleMedium); Text(deal.platform + (deal.seller?.let { " · $it" } ?: ""), style = MaterialTheme.typography.bodySmall) }
+                IconButton(onClick = { model.toggleUpcoming(deal) }) {
+                    Icon(if (model.watchedUpcoming.any { it.id == deal.id }) Icons.Outlined.Bookmark else Icons.Outlined.BookmarkBorder, "Toggle device-local watchlist")
+                }
+            }
+            Text("Starts: " + deal.startsAt, style = MaterialTheme.typography.bodySmall)
+            Text("Ends: " + deal.expiresAt, style = MaterialTheme.typography.bodySmall)
+            Text(if (deal.percent > 0) "Discount: ${deal.percent}% · cap ${deal.cap?.let { money(it) } ?: "No stated cap"}" else "Discount: ${money(deal.discount)}", style = MaterialTheme.typography.bodyMedium)
+            Text("Minimum spend: " + money(deal.minimumSpend), style = MaterialTheme.typography.bodySmall)
+            if (deal.productKeys.isNotEmpty()) Text("Applies to: " + deal.productKeys.joinToString(" · "), style = MaterialTheme.typography.bodySmall)
+            if (deal.eligibility.isNotEmpty()) Text("Eligibility: " + deal.eligibility.joinToString(" · "), style = MaterialTheme.typography.bodySmall)
+            deal.checkoutPaymentMethod?.let { Text("Checkout payment method: $it", style = MaterialTheme.typography.bodySmall) }
+            Text("Future cashback · separate from checkout: " + money(deal.cashback), style = MaterialTheme.typography.bodySmall)
+            Text("Evidence: ${deal.evidenceSource} · as of ${deal.asOf}${if (deal.synthetic) " · synthetic example" else ""}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            deal.evidenceUrl?.let { source -> if (Uri.parse(source).scheme in listOf("http", "https")) TextButton(onClick = { runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(source))) } }) { Text("Open voucher evidence") } }
+        }
+    }
+}
+
+@Composable
+fun DealCard(deal: Deal, model: HuntModel, snapshot: Boolean = false) {
     var expanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
     Card(Modifier.fillMaxWidth()) {
@@ -684,7 +765,7 @@ fun EmptyMessage(title: String, body: String) {
 }
 
 @Composable
-fun DiscoverScreen(model: ShopModel) {
+fun DiscoverScreen(model: HuntModel) {
     var query by remember { mutableStateOf("") }
     var demo by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -751,7 +832,32 @@ fun DiscoverScreen(model: ShopModel) {
 }
 
 @Composable
-fun ChatScreen(model: ShopModel, openHunt: () -> Unit) {
+fun HomeUpcomingWidget(model: HuntModel, openHunt: () -> Unit) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row {
+                Text("Upcoming voucher windows", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                TextButton(onClick = openHunt) { Text("See all") }
+            }
+            val results = model.upcoming
+            when {
+                model.loadingUpcoming && results == null -> LinearProgressIndicator(Modifier.fillMaxWidth())
+                results == null -> {
+                    Text("Connect to view supplied dates and terms. No prices or countdowns are inferred.", style = MaterialTheme.typography.bodySmall)
+                    OutlinedButton(onClick = { model.loadUpcoming(includeSynthetic = false) }) { Text("Load supplied windows") }
+                }
+                results.deals.isEmpty() -> Text("No supplied future voucher windows.", style = MaterialTheme.typography.bodySmall)
+                else -> {
+                    UpcomingCard(results.deals.first(), model)
+                    if (results.deals.size > 1) Text("Showing one of ${results.deals.size} supplied windows; see all for the complete list.", style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ChatScreen(model: HuntModel, openHunt: () -> Unit) {
     var draft by remember { mutableStateOf("") }
     var useModel by remember { mutableStateOf(false) }
     val chatListState = rememberLazyListState()
@@ -779,6 +885,7 @@ fun ChatScreen(model: ShopModel, openHunt: () -> Unit) {
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
+            item { HomeUpcomingWidget(model, openHunt) }
             if (model.messages.isEmpty())
                 item {
                     EmptyMessage(
@@ -789,7 +896,7 @@ fun ChatScreen(model: ShopModel, openHunt: () -> Unit) {
             items(model.messages) { m ->
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        if (m.role == "user") "You" else "ShopLens",
+                        if (m.role == "user") "You" else "Hunt",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary,
                     )
