@@ -2,8 +2,8 @@ import hashlib
 import json
 import struct
 import subprocess
-import zlib
 import sys
+import zlib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
