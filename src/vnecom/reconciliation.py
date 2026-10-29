@@ -1,4 +1,4 @@
-"""Parquet workflow reconciliation across committed captures, silver and gold."""
+"""Local Parquet/Delta reconciliation across committed captures, silver and gold."""
 
 import json
 from datetime import UTC, date, datetime, timedelta
@@ -15,8 +15,8 @@ from vnecom.settings import Settings
 def reconcile(settings: Settings, start: date, end: date) -> dict:
     if end < start:
         raise ValueError("end precedes start")
-    if settings.vnecom_table_format != "parquet" or settings.is_remote_lake:
-        raise ValueError("Reconciliation currently supports the local Parquet workflow")
+    if settings.is_remote_lake:
+        raise ValueError("Reconciliation currently supports local Parquet and Delta workflows")
     from vnecom.spark.silver import committed_bronze_dirs
 
     days = [start + timedelta(days=i) for i in range((end - start).days + 1)]
@@ -29,34 +29,54 @@ def reconcile(settings: Settings, start: date, end: date) -> dict:
     connection = duckdb.connect(":memory:")
     counts: dict[str, int] = {}
     issues = [f"Missing committed bronze: {d}" for d in missing]
+    stage_error_types = (duckdb.Error, OSError)
+    if settings.vnecom_table_format == "delta":
+        from deltalake.exceptions import DeltaError
+
+        stage_error_types += (DeltaError,)
     try:
+        relations = {}
         for table in ("product_snapshots", "product_daily"):
-            path = settings.lake_path("silver", table, "**", "*.parquet")
+            relation = f"_silver_{table}"
+            if settings.vnecom_table_format == "delta":
+                from deltalake import DeltaTable
+
+                path = settings.lake_path("silver", table)
+                delta = DeltaTable(path, storage_options=settings.storage_options())
+                date_filter = [[("capture_date", ">=", start), ("capture_date", "<=", end)]]
+                connection.register(relation, delta.to_pyarrow_table(filters=date_filter))
+            else:
+                path = settings.lake_path("silver", table, "**", "*.parquet")
+                connection.read_parquet(path, hive_partitioning=True).create_view(relation)
+            relations[table] = relation
+
+        snapshots = relations["product_snapshots"]
+        daily = relations["product_daily"]
+        for table, source in relations.items():
             relation = connection.execute(
-                "SELECT count(*) FROM read_parquet(?, hive_partitioning=true) WHERE capture_date BETWEEN ? AND ?",
-                [path, start, end],
+                f"SELECT count(*) FROM {source} WHERE capture_date BETWEEN ? AND ?",
+                [start, end],
             )
             counts[table] = relation.fetchone()[0]
-        path = settings.lake_path("silver", "product_snapshots", "**", "*.parquet")
         duplicates = connection.execute(
-            """
+            f"""
             SELECT coalesce(sum(n - 1),0) FROM (
-                SELECT count(*) n FROM read_parquet(?, hive_partitioning=true)
+                SELECT count(*) n FROM {snapshots}
                 WHERE capture_date BETWEEN ? AND ?
                 GROUP BY platform,source,product_id,sku_id,capture_date,capture_hour HAVING count(*) > 1
             )
         """,
-            [path, start, end],
+            [start, end],
         ).fetchone()[0]
         counts["duplicate_snapshot_keys"] = int(duplicates)
         expected_daily = connection.execute(
-            """
+            f"""
             SELECT count(*) FROM (
                 SELECT DISTINCT platform,source,product_id,sku_id,capture_date
-                FROM read_parquet(?, hive_partitioning=true) WHERE capture_date BETWEEN ? AND ?
+                FROM {snapshots} WHERE capture_date BETWEEN ? AND ?
             )
         """,
-            [path, start, end],
+            [start, end],
         ).fetchone()[0]
         if expected_daily != counts["product_daily"]:
             issues.append("Snapshot/daily listing counts disagree")
@@ -65,8 +85,8 @@ def reconcile(settings: Settings, start: date, end: date) -> dict:
         daily_dates = {
             r[0]
             for r in connection.execute(
-                "SELECT DISTINCT capture_date FROM read_parquet(?, hive_partitioning=true) WHERE capture_date BETWEEN ? AND ?",
-                [settings.lake_path("silver", "product_daily", "**", "*.parquet"), start, end],
+                f"SELECT DISTINCT capture_date FROM {daily} WHERE capture_date BETWEEN ? AND ?",
+                [start, end],
             ).fetchall()
         }
         for d in days:
@@ -87,7 +107,7 @@ def reconcile(settings: Settings, start: date, end: date) -> dict:
             """,
                 [start, end],
             ).fetchall()
-    except (duckdb.Error, OSError) as exc:
+    except stage_error_types as exc:
         issues.append(f"Required stage unavailable: {type(exc).__name__}")
         latest, by_source = None, []
     finally:
