@@ -30,8 +30,10 @@ class MemoryVectorStore:
             if len(vector) != self.dimensions:
                 raise ValueError(f"embedding must have {self.dimensions} dimensions")
             self.rows[document.document_id] = {
-                "document_id": document.document_id, "text": document.text,
-                "content_hash": document.content_hash, "metadata": document.metadata,
+                "document_id": document.document_id,
+                "text": document.text,
+                "content_hash": document.content_hash,
+                "metadata": document.metadata,
                 "embedding": list(vector),
             }
 
@@ -43,13 +45,25 @@ class MemoryVectorStore:
         for row in self.rows.values():
             vector = row["embedding"]
             denominator = query_norm * (sum(value * value for value in vector) ** 0.5)
-            ranked.append({**row, "score": sum(a * b for a, b in zip(embedding, vector, strict=True)) / denominator if denominator else 0.0})
+            ranked.append(
+                {
+                    **row,
+                    "score": sum(a * b for a, b in zip(embedding, vector, strict=True)) / denominator
+                    if denominator
+                    else 0.0,
+                }
+            )
         return sorted(ranked, key=lambda row: row["score"], reverse=True)[:limit]
 
 
 def build_embedding_components(
-    settings: Settings | None = None, ai_settings: AISettings | None = None, *,
-    embedder: Any | None = None, store: Any | None = None, pool: Any | None = None, dynamodb_table: Any | None = None,
+    settings: Settings | None = None,
+    ai_settings: AISettings | None = None,
+    *,
+    embedder: Any | None = None,
+    store: Any | None = None,
+    pool: Any | None = None,
+    dynamodb_table: Any | None = None,
 ) -> tuple[LakeReader, Any, Any, AISettings]:
     """Build configurable lake, embedding, and vector adapters; clients may be injected for tests."""
     platform_settings = settings or get_settings()
@@ -68,7 +82,9 @@ def build_embedding_components(
         elif config.vector_store == "pgvector":
             if pool is None:
                 if config.pgvector_dsn is None:
-                    raise RuntimeError("Set VNECOM_AI_PGVECTOR_DSN and install 'vnecom[ai]' for pgvector storage")
+                    raise RuntimeError(
+                        "Set VNECOM_AI_PGVECTOR_DSN and install 'vnecom[ai]' for pgvector storage"
+                    )
                 try:
                     from pgvector.psycopg import register_vector_async
                     from psycopg.rows import dict_row
@@ -76,6 +92,7 @@ def build_embedding_components(
                     from psycopg_pool import AsyncConnectionPool
                 except ImportError as exc:
                     raise RuntimeError("pgvector storage requires 'vnecom[ai]'") from exc
+
                 async def configure_pgvector(conn: Any) -> None:
                     await conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
                     await conn.commit()
@@ -84,8 +101,11 @@ def build_embedding_components(
                     await conn.commit()
 
                 pool = AsyncConnectionPool(
-                    config.pgvector_dsn.get_secret_value(), open=True, configure=configure_pgvector,
-                    kwargs={"row_factory": dict_row}, min_size=1,
+                    config.pgvector_dsn.get_secret_value(),
+                    open=True,
+                    configure=configure_pgvector,
+                    kwargs={"row_factory": dict_row},
+                    min_size=1,
                 )
             store = PgVectorStore(pool, dimensions=config.embedding_dimensions, table=config.embedding_table)
         elif config.vector_store == "dynamodb":
@@ -105,12 +125,22 @@ def build_embedding_components(
 
 
 async def run_embedding_job(
-    settings: Settings | None = None, ai_settings: AISettings | None = None, *,
-    limit: int | None = None, embedder: Any | None = None, store: Any | None = None,
-    pool: Any | None = None, dynamodb_table: Any | None = None,
+    settings: Settings | None = None,
+    ai_settings: AISettings | None = None,
+    *,
+    limit: int | None = None,
+    embedder: Any | None = None,
+    store: Any | None = None,
+    pool: Any | None = None,
+    dynamodb_table: Any | None = None,
 ) -> dict[str, int]:
     reader, embedder, store, config = build_embedding_components(
-        settings, ai_settings, embedder=embedder, store=store, pool=pool, dynamodb_table=dynamodb_table,
+        settings,
+        ai_settings,
+        embedder=embedder,
+        store=store,
+        pool=pool,
+        dynamodb_table=dynamodb_table,
     )
     documents = reader.read_product_documents(limit=limit)
     if not documents:
@@ -118,8 +148,12 @@ async def run_embedding_job(
     if config.vector_store == "pgvector" and hasattr(store, "initialize"):
         await store.initialize()
     failures = await embed_documents(
-        documents, embedder, store, batch_size=config.embedding_batch_size,
-        concurrency=config.embedding_concurrency, max_retries=config.embedding_max_retries,
+        documents,
+        embedder,
+        store,
+        batch_size=config.embedding_batch_size,
+        concurrency=config.embedding_concurrency,
+        max_retries=config.embedding_max_retries,
         retry_delay_s=config.embedding_retry_delay_s,
     )
     return {"processed": len(documents), "failed": len(failures), "indexed": len(documents) - len(failures)}
@@ -131,4 +165,6 @@ def run_embedding_job_sync(**kwargs: Any) -> dict[str, int]:
         asyncio.get_running_loop()
     except RuntimeError:
         return asyncio.run(run_embedding_job(**kwargs))
-    raise RuntimeError("run_embedding_job_sync cannot run inside an active event loop; await run_embedding_job")
+    raise RuntimeError(
+        "run_embedding_job_sync cannot run inside an active event loop; await run_embedding_job"
+    )

@@ -8,8 +8,13 @@ from vnecom.ai.infrastructure.fake_embedder import DeterministicFakeEmbedder
 
 def test_product_document_is_stable_and_has_source_metadata():
     source = {
-        "platform": "shopee", "product_id": "p-1", "sku_id": "sku", "title": "Tai nghe",
-        "brand": "Acme", "price_vnd": 120_000, "capture_date": date(2025, 1, 1),
+        "platform": "shopee",
+        "product_id": "p-1",
+        "sku_id": "sku",
+        "title": "Tai nghe",
+        "brand": "Acme",
+        "price_vnd": 120_000,
+        "capture_date": date(2025, 1, 1),
         "url": "https://example.test/p-1",
     }
     first = build_product_document(source)
@@ -23,9 +28,16 @@ def test_product_document_is_stable_and_has_source_metadata():
 
 def test_dim_product_document_includes_category_seller_and_robust_30_day_price_summary():
     source = {
-        "platform": "shopee", "product_id": "p2", "title": "Headphones", "brand": "Acme",
-        "category_id": "audio", "seller_id": "s1", "seller_name": "Official Shop",
-        "is_official_store": True, "product_sk": "sk-1", "is_current": True,
+        "platform": "shopee",
+        "product_id": "p2",
+        "title": "Headphones",
+        "brand": "Acme",
+        "category_id": "audio",
+        "seller_id": "s1",
+        "seller_name": "Official Shop",
+        "is_official_store": True,
+        "product_sk": "sk-1",
+        "is_current": True,
     }
     prices = [
         {"capture_date": "2024-11-30", "price_close_vnd": 1},  # outside the inclusive 30-day window

@@ -23,9 +23,15 @@ class DynamoVectorStore:
         for doc, vector in zip(documents, embeddings, strict=True):
             if len(vector) != self.dimensions:
                 raise ValueError(f"embedding must have {self.dimensions} dimensions")
-            self.table.put_item(Item={"document_id": doc.document_id, "text": doc.text,
-                "content_hash": doc.content_hash, "metadata": doc.metadata,
-                "embedding": [Decimal(str(value)) for value in vector]})
+            self.table.put_item(
+                Item={
+                    "document_id": doc.document_id,
+                    "text": doc.text,
+                    "content_hash": doc.content_hash,
+                    "metadata": doc.metadata,
+                    "embedding": [Decimal(str(value)) for value in vector],
+                }
+            )
 
     async def search(self, embedding: Sequence[float], *, limit: int = 10) -> list[dict[str, Any]]:
         if len(embedding) != self.dimensions:
@@ -41,6 +47,6 @@ class DynamoVectorStore:
         for row in rows:
             vector = [float(value) for value in row.get("embedding", [])]
             row["score"] = sum(a * b for a, b in zip(query, vector, strict=True)) / (
-                (sum(a*a for a in query) * sum(b*b for b in vector)) ** 0.5 or 1
+                (sum(a * a for a in query) * sum(b * b for b in vector)) ** 0.5 or 1
             )
         return sorted(rows, key=lambda row: row["score"], reverse=True)[:limit]

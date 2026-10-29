@@ -22,6 +22,30 @@ app = typer.Typer(no_args_is_help=True, add_completion=False, help=__doc__)
 ai_app = typer.Typer(no_args_is_help=True, add_completion=False, help="ShopLens AI capabilities.")
 app.add_typer(ai_app, name="ai")
 DBT_DIR = REPO_ROOT / "transform" / "dbt"
+
+
+@app.command("deals-demo")
+def deals_demo() -> None:
+    """Seed opt-in synthetic offers/vouchers for UI validation; never labels them live."""
+    from vnecom.deal_catalog import demo_catalog, read_catalog, save_catalog
+
+    if any(offer.source_tier != "synthetic" for offer in read_catalog(get_settings()).offers):
+        raise typer.BadParameter("Refusing to replace non-synthetic deal evidence with demo data")
+    typer.echo(str(save_catalog(get_settings(), demo_catalog())))
+
+
+@app.command("deals-import")
+def deals_import(path: Path) -> None:
+    """Validate and atomically replace the offer/voucher evidence feed."""
+    from vnecom.deal_catalog import save_catalog
+    from vnecom.deals import Catalog
+
+    if path.stat().st_size > 10_000_000:
+        raise typer.BadParameter("catalog exceeds 10 MB")
+    catalog = Catalog.model_validate_json(path.read_text(encoding="utf-8"))
+    typer.echo(str(save_catalog(get_settings(), catalog)))
+
+
 logging.basicConfig(
     level=os.getenv("VNECOM_LOG_LEVEL", "INFO"), format="%(asctime)s %(levelname)s %(name)s: %(message)s"
 )
@@ -73,9 +97,35 @@ def ai_grpc() -> None:
 
 
 @ai_app.command("eval")
-def ai_eval() -> None:
-    """Run the ShopLens evaluation suite (P1 implementation)."""
-    typer.echo("AI evaluation is not implemented yet.")
+def ai_eval(output: Path | None = None) -> None:
+    """Run offline routing/numerical/citation regressions; does not call a live model."""
+    from vnecom.ai.evaluation import evaluate
+
+    result = evaluate()
+    text = json.dumps(result, indent=2)
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(text, encoding="utf-8")
+    typer.echo(text)
+    if not result["passed"]:
+        raise typer.Exit(2)
+
+
+@ai_app.command("probe")
+def ai_probe() -> None:
+    """Make one real provider request, without sending platform data or printing credentials."""
+    from vnecom.ai.config import get_ai_settings
+    from vnecom.ai.domain.entities import GenerationRequest
+    from vnecom.ai.infrastructure.openai_compatible import OpenAICompatibleModel
+
+    config = get_ai_settings()
+    if not config.model_configured:
+        raise typer.BadParameter("Configure a compatible endpoint/model and enable AI first")
+    with OpenAICompatibleModel(config) as model:
+        response = model.generate(GenerationRequest(prompt="Reply with a short greeting.", max_tokens=32))
+    if not response.text.strip():
+        raise typer.BadParameter("Model returned empty text")
+    typer.echo(json.dumps({"model": response.model, "text": response.text, "live_request": True}))
 
 
 @ai_app.command("match")
@@ -201,6 +251,9 @@ def gold(
     target: Annotated[str | None, typer.Option(help="dbt target (lite|minio)")] = None,
 ) -> None:
     """Silver -> gold marts with dbt (seed + run + test)."""
+    from vnecom.pipeline import assert_publishable
+
+    assert_publishable(get_settings())
     args = ["build"]
     if select:
         args += ["--select", select]
@@ -215,6 +268,61 @@ def run(start: StartOpt = None, end: EndOpt = None) -> None:
     ingest(start=start, end=end, source=None, platform=None, run_id=None)
     silver(start=start, end=end, skip_dims=False)
     gold(select=None, target=None)
+
+
+@app.command("backfill")
+def backfill(
+    start: Annotated[str, typer.Option("--start")],
+    end: Annotated[str, typer.Option("--end")],
+    execute: bool = False,
+) -> None:
+    """Plan/resume a dated historical replay. Execution reuses committed captures."""
+    from vnecom.ingest.registry import run_source
+    from vnecom.pipeline import backfill_plan
+
+    settings = get_settings()
+    plan = backfill_plan(settings, date.fromisoformat(start), date.fromisoformat(end))
+    typer.echo(
+        json.dumps(
+            {
+                "days": (date.fromisoformat(end) - date.fromisoformat(start)).days + 1,
+                "capture": sum(p["action"] == "capture" for p in plan),
+                "reuse": sum(p["action"] == "reuse" for p in plan),
+                "plan": plan,
+            },
+            indent=2,
+        )
+    )
+    if execute:
+        rid = f"{datetime.now(UTC):%Y%m%dT%H%M%S}-bf{uuid.uuid4().hex[:6]}"
+        for item in plan:
+            if item["action"] == "capture":
+                run_source(
+                    settings, item["source"], date.fromisoformat(item["date"]), rid, [item["platform"]]
+                )
+        silver(start=start, end=end, skip_dims=False)
+        gold(select=None, target=None)
+
+
+@app.command("reconcile")
+def reconcile_command(
+    start: Annotated[str, typer.Option("--start")], end: Annotated[str, typer.Option("--end")]
+) -> None:
+    """Reconcile bronze/silver/gold counts and capture gaps; nonzero on discrepancies."""
+    from vnecom.reconciliation import reconcile
+
+    result = reconcile(get_settings(), date.fromisoformat(start), date.fromisoformat(end))
+    typer.echo(json.dumps(result, indent=2, default=str))
+    if not result["passed"]:
+        raise typer.Exit(2)
+
+
+@app.command("index-products")
+def index_products() -> None:
+    """Incrementally index latest complete silver product snapshots for retrieval."""
+    from vnecom.product_index import sync_lake
+
+    typer.echo(json.dumps(sync_lake(get_settings()), indent=2))
 
 
 _TRINO_TYPES = {

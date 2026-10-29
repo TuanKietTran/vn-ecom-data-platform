@@ -35,12 +35,16 @@ class TikiPublicConnector(Connector):
                 try:
                     data = self.get_json(LISTING_URL, params={"category": cat, "page": page, "limit": 40})
                 except BlockedError as e:
+                    self.capture_complete = False
                     log.warning("%s: %s — stopping this run", self.name, e)
                     return
                 items: list[dict[str, Any]] = data.get("data") or []
                 if not items:
                     break
                 for it in items:
+                    if it.get("id") is None or not str(it.get("name") or "").strip():
+                        self.capture_complete = False
+                        continue
                     yield self._map(it, cat, run_id)
                 paging = data.get("paging") or {}
                 if page >= int(paging.get("last_page") or page):

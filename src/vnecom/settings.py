@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     vnecom_table_format: Literal["delta", "parquet"] = "delta"
     vnecom_timezone: str = "Asia/Ho_Chi_Minh"
     vnecom_sources: str = "synthetic"
+    vnecom_min_capture_ratio: float = Field(default=0.5, gt=0, le=1)
 
     # http behaviour — all yours to tune
     vnecom_http_user_agent: str = "vnecom-tracker/0.1"

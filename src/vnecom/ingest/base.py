@@ -96,12 +96,14 @@ class Connector(ABC):
     source_tier: ClassVar[str]  # official | affiliate | licensed | public | synthetic
     respect_robots: ClassVar[bool] = False  # web sources set True; VNECOM_RESPECT_ROBOTS=false overrides
     multi_platform: ClassVar[bool] = False  # rows carry their own platform (feeds) -> bronze platform=_mixed
+    allows_empty_capture = False
 
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
         self._limiter = RateLimiter(settings.vnecom_http_rps)
         self._robots: dict[str, urllib.robotparser.RobotFileParser] = {}
         self._client: httpx.Client | None = None
+        self.capture_complete = True
 
     # ── lifecycle ──────────────────────────────────────────────────────
     def check_config(self) -> None:  # noqa: B027 — optional hook

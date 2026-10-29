@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from datetime import date
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
 
 from vnecom.ingest.accesstrade import AccessTradeConnector
 from vnecom.ingest.base import Connector, ConnectorNotConfigured
@@ -19,6 +20,7 @@ from vnecom.ingest.synthetic import SyntheticConnector
 from vnecom.ingest.tiki import TikiPublicConnector
 from vnecom.ingest.tiktok import TikTokShopConnector
 from vnecom.models import Platform
+from vnecom.pipeline import QualityGateError, capture_scope, quality_report
 from vnecom.settings import Settings
 
 Factory = Callable[[Settings], Connector]
@@ -63,9 +65,23 @@ def run_source(
         try:
             conn.check_config()
         except ConnectorNotConfigured as e:
+            quality_report(
+                settings,
+                f"bronze:{source}:{platform.value}:{capture_date}:{capture_scope(settings, source)}",
+                passed=False,
+                dt=str(capture_date),
+                reason="connector_not_configured",
+            )
             print(f"[skip] {source}/{platform.value}: {e}")
             continue
         try:
+            if (
+                source not in {"synthetic", "feed"}
+                and capture_date != datetime.now(ZoneInfo(settings.vnecom_timezone)).date()
+            ):
+                raise ValueError(
+                    "Live catalog captures must use today's date; historical prices require a dated feed"
+                )
             part = "_mixed" if conn.multi_platform else platform.value
             results.append(
                 write_bronze(
@@ -75,8 +91,20 @@ def run_source(
                     source=conn.name,
                     dt=capture_date,
                     run_id=run_id,
+                    capture_complete=lambda conn=conn: conn.capture_complete,
+                    allow_empty=conn.allows_empty_capture,
                 )
             )
+        except Exception as exc:
+            if not isinstance(exc, QualityGateError):
+                quality_report(
+                    settings,
+                    f"bronze:{source}:{platform.value}:{capture_date}:{capture_scope(settings, source)}",
+                    passed=False,
+                    dt=str(capture_date),
+                    reason=type(exc).__name__,
+                )
+            raise
         finally:
             conn.close()
     return results

@@ -20,8 +20,14 @@ class EmbeddingFailure:
 
 
 async def embed_documents(
-    documents: Sequence[LakeDocument], embedder: EmbeddingPort, store: Any, *, batch_size: int = 32,
-    concurrency: int = 4, max_retries: int = 3, retry_delay_s: float = 0.1,
+    documents: Sequence[LakeDocument],
+    embedder: EmbeddingPort,
+    store: Any,
+    *,
+    batch_size: int = 32,
+    concurrency: int = 4,
+    max_retries: int = 3,
+    retry_delay_s: float = 0.1,
 ) -> list[EmbeddingFailure]:
     """Embed batches with bounded concurrent requests; retry failures, return exhausted docs as DLQ."""
     if batch_size < 1 or concurrency < 1 or max_retries < 0 or retry_delay_s < 0:
@@ -47,7 +53,7 @@ async def embed_documents(
         except Exception as exc:
             failures.extend(EmbeddingFailure(doc, f"{type(exc).__name__}: {exc}") for doc in batch)
 
-    batches = [list(documents[i:i + batch_size]) for i in range(0, len(documents), batch_size)]
+    batches = [list(documents[i : i + batch_size]) for i in range(0, len(documents), batch_size)]
     await asyncio.gather(*(process(batch) for batch in batches))
     return failures
 

@@ -14,7 +14,7 @@ from vnecom.gold import dbt_env, prepare_local_gold
 from vnecom.ingest.registry import run_source
 
 pytestmark = pytest.mark.spark
-DAYS = [date(2026, 10, 20) + timedelta(days=i) for i in range(25)]  # pre-11.11 history + 11.11
+DAYS = [date(2026, 9, 30) + timedelta(days=i) for i in range(45)]  # 30-day reference history + 11.11
 
 
 def test_bronze_to_gold(spark, settings, tmp_path):
@@ -63,6 +63,13 @@ def test_bronze_to_gold(spark, settings, tmp_path):
         0
     ]
     assert hikes > 0, "planted pre-campaign price hikes should be detected"
+    from vnecom.reconciliation import reconcile
+
+    report = reconcile(settings, DAYS[0], DAYS[-1])
+    assert report["passed"], report["issues"]
+    assert report["missing_days"] == []
+    assert report["counts"]["gold_listing_daily"] == report["counts"]["product_daily"]
+    assert report["by_source_tier"][0]["source_tier"] == "synthetic"
 
 
 def test_stream_event_parsing(spark):
@@ -88,3 +95,31 @@ def test_stream_event_parsing(spark):
     assert parsed.count() == 1
     w = window_prices(parsed).collect()
     assert w[0]["price_min_vnd"] == 99000 and w[0]["had_flash_sale"] is True
+
+
+def test_failed_silver_preserves_healthy_snapshots(spark, settings):
+    from vnecom.ingest.bronze_writer import write_bronze
+    from vnecom.ingest.synthetic import SyntheticConnector
+    from vnecom.models import Platform
+    from vnecom.pipeline import QualityGateError, assert_publishable
+    from vnecom.spark import io
+    from vnecom.spark.silver import build_snapshots
+
+    day = date(2026, 10, 28)
+    rows = list(SyntheticConnector(settings, Platform.TIKI).fetch(day, "healthy"))
+    write_bronze(settings, rows, platform="tiki", source="synthetic", dt=day, run_id="healthy")
+    stats = build_snapshots(spark, settings, day)
+    before = io.read_table(spark, settings, "product_snapshots").count()
+    assert before == stats["rows_clean"]
+    invalid = [row.model_copy(update={"price": -100}) for row in rows]
+    write_bronze(settings, invalid, platform="tiki", source="synthetic", dt=day, run_id="invalid")
+    with pytest.raises(QualityGateError, match="healthy snapshots"):
+        build_snapshots(spark, settings, day)
+    assert io.read_table(spark, settings, "product_snapshots").count() == before
+    with pytest.raises(QualityGateError):
+        assert_publishable(settings)
+    write_bronze(settings, rows, platform="tiki", source="synthetic", dt=day, run_id="recovery")
+    recovered = build_snapshots(spark, settings, day)
+    assert recovered["rows_clean"] == before
+    assert recovered["rows_quarantined"] == 0
+    assert_publishable(settings)

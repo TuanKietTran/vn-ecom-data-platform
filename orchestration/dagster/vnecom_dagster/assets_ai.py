@@ -25,8 +25,10 @@ def embedding_coverage(context: dg.AssetCheckExecutionContext) -> dg.AssetCheckR
     indexed = int(metadata["indexed_products"].value) if "indexed_products" in metadata else 0
     total = int(metadata["total_products"].value) if "total_products" in metadata else 0
     coverage = indexed / total if total else 0.0
-    return dg.AssetCheckResult(passed=total > 0 and coverage >= 0.95,
-                               metadata={"indexed_products": indexed, "total_products": total, "coverage": coverage})
+    return dg.AssetCheckResult(
+        passed=total > 0 and coverage >= 0.95,
+        metadata={"indexed_products": indexed, "total_products": total, "coverage": coverage},
+    )
 
 
 @dg.asset_check(asset=["ai", "product_embeddings"], name="embedding_freshness")
@@ -34,5 +36,4 @@ def embedding_freshness(context: dg.AssetCheckExecutionContext) -> dg.AssetCheck
     event = context.instance.get_latest_materialization_event(context.asset_key)
     timestamp = event.timestamp if event else 0
     age_hours = (datetime.now(UTC).timestamp() - timestamp) / 3600 if timestamp else float("inf")
-    return dg.AssetCheckResult(passed=age_hours <= 24,
-                               metadata={"age_hours": age_hours, "max_age_hours": 24})
+    return dg.AssetCheckResult(passed=age_hours <= 24, metadata={"age_hours": age_hours, "max_age_hours": 24})
