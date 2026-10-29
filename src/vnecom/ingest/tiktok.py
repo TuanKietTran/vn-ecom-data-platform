@@ -47,11 +47,11 @@ class TikTokShopConnector(Connector):
                 "app_key": s.tiktok_app_key,
                 "timestamp": int(time.time()),
                 "shop_cipher": s.tiktok_shop_cipher,
-                "page_size": 100,
             }
+            body_params: dict[str, Any] = {"page_size": 100, "search_status": "ACTIVATE"}
             if page_token:
-                params["page_token"] = page_token
-            body = json.dumps({"status": "ACTIVATE"}, separators=(",", ":"))
+                body_params["page_token"] = page_token
+            body = json.dumps(body_params, separators=(",", ":"))
             params["sign"] = tiktok_sign(s.tiktok_app_secret.get_secret_value(), SEARCH_PATH, params, body)  # type: ignore[union-attr]
             data = self.post_json(
                 f"{s.tiktok_host}{SEARCH_PATH}",
