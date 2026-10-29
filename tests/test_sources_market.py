@@ -243,6 +243,20 @@ def test_sendo_stops_cleanly_after_failure_and_keeps_rows(settings, monkeypatch,
     assert [row.product_id for row in rows] == ["77"]
 
 
+def test_sendo_public_stops_gracefully_on_blocked_endpoint(settings):
+    s = settings.model_copy(update={"sendo_public_keywords": "áo thun", "vnecom_public_max_pages": 1})
+    requests = []
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        requests.append(req.url.path)
+        if req.url.path == "/robots.txt":
+            return httpx.Response(404)
+        return httpx.Response(403, text="Access denied")
+
+    assert list(_mock(SendoPublicConnector(s), handler).fetch(D, "r")) == []
+    assert requests == ["/robots.txt", "/web/products"]
+
+
 # ── Retailers via JSON-LD ─────────────────────────────────────────────
 PRODUCT_PAGE = """<html><head>
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[
