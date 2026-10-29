@@ -16,7 +16,7 @@ jobs:
       - run: npm run typecheck
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
-      - run: python -m venv .venv && .venv/bin/pip install -e '.[ai]'
+      - uses: astral-sh/setup-uv@v6
       - run: npx playwright install --with-deps chromium
       - run: npm run test:clients
   android:
